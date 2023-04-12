@@ -1,0 +1,27 @@
+{
+  "name": "spacedao-consensus-contracts",
+  "version": "0.1.0",
+  "description": "Smart contracts to manage Space DAO consensus mechanism",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://gitlab.com/parametry-ai/space-dao/contracts/spacedao-consensus-contracts.git"
+  },
+  "keywords": [
+    "smart",
+    "contract",
+    "blockchain",
+    "consensus",
+    "space",
+    "insight"
+  ],
+  "author": "Red Boumghar",
+  "license": "LGPL-3.0-or-later",
+  "bugs": {
+    "url": "https://gitlab.com/parametry-ai/space-dao/contracts/spacedao-consensus-contracts/issues"
+  },
+  "homepage": "https://gitlab.com/parametry-ai/space-dao/contracts/spacedao-consensus-contracts#readme"
+}
