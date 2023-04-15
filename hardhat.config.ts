@@ -12,6 +12,5 @@ const config: HardhatUserConfig = {
   }
 };
 
-console.log("config loaded");
-console.log(creds);
+console.log("# Hardhat config loaded");
 export default config;
