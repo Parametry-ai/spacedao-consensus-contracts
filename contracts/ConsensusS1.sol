@@ -17,9 +17,9 @@ contract ConsensusS1 {
     string public anything;
 
     // For the Bayes fusion to function correctly we take care of limits
-    float MAX_PROBABILITY = 0.999999999;
-    float MIN_PROBABILITY = 0.000000001;
-    uint CDM_MAX_PAST_AGE = 86400; // 1 day in secs
+    ufixed private MAX_PROBABILITY = 0.999999999;
+    ufixed private MIN_PROBABILITY;// = 0.000000001;
+    uint private CDM_MAX_PAST_AGE;// = 86400; // 1 day in secs
 
     // ------------- suppliers related variables
 
@@ -27,7 +27,7 @@ contract ConsensusS1 {
     /// @notice type for a minimum conjunction data message 
     struct mcdm {
         // Probability of collusion
-        float pc;
+        ufixed pc;
         // Time to Closest Approach in seconds unix timestamps
         uint tca;
         // Supplier address
@@ -56,7 +56,7 @@ contract ConsensusS1 {
     event evt_insight_received(address supplier, address requester);
     event evt_insight_calculated(string request_id, mcdm);
 
-    CDM[] public cdms;
+    mcdm[] public cdms;
 
     // ------------- CONSENSUS CONTRACT ROUTINES
     /// @param authorized_caller Authorized contract address taht can call the
@@ -105,7 +105,7 @@ contract ConsensusS1 {
         return true;
     }
 
-    function _this_supplier_belief(address supplier) private returns (float) {
+    function _this_supplier_belief(address supplier) private returns (ufixed) {
         // mockup, TODO
         return 0.8;
     }
@@ -118,13 +118,13 @@ contract ConsensusS1 {
         // TODO check if all data is here
 
         // Gather confidence models from suppliers
-        mapping (address => float) s2belief;
+        mapping (address => ufixed) s2belief;
         // Mapping to check last data from supplier 
         mapping (address => uint) s2rtrvd;
 
         // Gather confidence models from suppliers
         // and prepare Bayes Fusion
-        float belief_sum = 0.0;
+        ufixed belief_sum = 0.0;
         for (uint i = 0; i < req2mcdm[request_id].length; i++) {
             // Suppliers can set data several times
             // they are only paid once per request.
@@ -163,11 +163,11 @@ contract ConsensusS1 {
     ///                   should have listened too and registered. Implicitly
     ///                   contains information about which satellites are
     ///                   involved in the conjunction
-    /// @param cdm_pc floating point precision probability for probability of
+    /// @param cdm_pc ufixeding point precision probability for probability of
     ///                collision
     /// @param cdm_tca uint of unix timestamp in seconds
     function set_data(string memory request_id,
-                      float cdm_pc,
+                      ufixed cdm_pc,
                       uint cdm_tca) public returns (bool) {
         address supplier_addr = msg.sender;
         uint unix_secs = Math.round(Date.now() / 1000);
