@@ -8,7 +8,7 @@ import "hardhat/console.sol";
 contract ConsensusS1 {
     // when in factory mode: mapping (uint => address) cons2owner;
     // when in factory mode: mapping (address => uint) owner2cons;
-    address owner;
+    address _owner;
 
     // List of callers authorized to call consensus calculation
     address[] private _authorized_callers;
@@ -36,8 +36,8 @@ contract ConsensusS1 {
         uint unix_secs;
     }
 
+    // Maps requests to arrays of supplier CDMs
     mapping (string => mcdm[]) req2mcdm;
-    mapping (string => address[]) req2supplier;
 
     /// @notice contains all fields for a proper CDM request
     struct CDMRequest {
@@ -80,7 +80,7 @@ contract ConsensusS1 {
         console.log("Request sent at block timestamp is %o", block.timestamp);
 
         // require(block.timestamp <= certain_time, "You can't call this not, its too late");
-        require(msg.sender == owner, "Who are you again?");
+        require(msg.sender == _owner, "Who are you again?");
 
         emit evt_cdm_request(
             CDMRequest(
@@ -97,11 +97,17 @@ contract ConsensusS1 {
     }
 
     // ----------------------------- CONSENSUS PART
-
-    function _is_all_data_here(string request_id) private returns (bool) {
-        if (req2supplier[request_id] < supplier_whitelist) {
+    function _is_all_data_here(string request_id, address[] min_supplier_list) private returns (bool) {
+        // obvious fast check, if we have less replies than suppliers
+        // the contract surely need to wait longer
+        if (req2mcdm[request_id].length < min_supplier_list.length) {
             return false;
         }
+
+        // if not, then how many unique suppliers do we have:
+        for (uint i = 0; i < req2mcdm[request_id].length; i++) {
+
+
         return true;
     }
 
@@ -169,10 +175,12 @@ contract ConsensusS1 {
     function set_data(string memory request_id,
                       ufixed cdm_pc,
                       uint cdm_tca) public returns (bool) {
-        address supplier_addr = msg.sender;
-        uint unix_secs = Math.round(Date.now() / 1000);
+        // Unix time in seconds is block.timestamp
 
-        // TODO check inputs
+        // --- TODO check if supplier is a registrered supplier
+        address supplier_addr = msg.sender;
+
+        // --- TODO check inputs
         if (cdm_pc > 1.0 || cdm_pc < 0.0) {
             return false;
         } else {
@@ -184,7 +192,7 @@ contract ConsensusS1 {
             }
         }
 
-        if (cdm_tca < unix_secs-CDM_MAX_PAST_AGE) {
+        if (cdm_tca < block.timestamp - CDM_MAX_PAST_AGE) {
             // TCA is a day in the past
             // Consensus won't use it.
             return false;
@@ -193,11 +201,10 @@ contract ConsensusS1 {
         // Create entries in local mappings
         // Suppliers can set data several times
         // they are only paid once per request.
-        mcdm input = mcdm(cdm_pc, cdm_tca, supplier_addr, unix_secs);
+        mcdm input = mcdm(cdm_pc, cdm_tca, supplier_addr, block.timestamp);
         req2mcdm[request_id].push(input);
-        req2supplier[request_id].push(supplier_addr);
 
-        emit evt_insight_received(supplier, requester);
+        emit evt_insight_received(supplier_addr, requester);
     }
 
 
