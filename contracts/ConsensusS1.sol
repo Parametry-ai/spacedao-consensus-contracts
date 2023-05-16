@@ -17,8 +17,8 @@ contract ConsensusS1 {
     string public anything;
 
     // For the Bayes fusion to function correctly we take care of limits
-    ufixed private MAX_PROBABILITY = 0.999999999;
-    ufixed private MIN_PROBABILITY;// = 0.000000001;
+    /*ufixed*/ uint private MAX_PROBABILITY = 999999999;
+    /*ufixed*/ uint private MIN_PROBABILITY = 1;
     uint private CDM_MAX_PAST_AGE;// = 86400; // 1 day in secs
 
     // ------------- suppliers related variables
@@ -27,7 +27,7 @@ contract ConsensusS1 {
     /// @notice type for a minimum conjunction data message 
     struct mcdm {
         // Probability of collusion
-        ufixed pc;
+        /*ufixed*/ uint pc;
         // Time to Closest Approach in seconds unix timestamps
         uint tca;
         // Supplier address
@@ -36,14 +36,27 @@ contract ConsensusS1 {
         uint unix_secs;
     }
 
+    /// @notice this is default template for consensus cdm
+    struct ccdm {
+        string event_id;
+        uint created; // block.timestamp
+        uint tca; // CDM timestamp
+        /*ufixed*/ uint pc;
+        /*ufixed*/ uint distance_m;
+        address[2] rsos; // list of involved RSOs
+        address[3] sources; // list of data suppliers
+        /*ufixed*/ uint consensus_level;
+    }
+
     // Maps requests to arrays of supplier CDMs
     mapping (string => mcdm[]) req2mcdm;
+    mapping (string => ccdm) req2ccdm;
 
     /// @notice contains all fields for a proper CDM request
     struct CDMRequest {
-        string requester; // to be address
-        string issuer; // to be address
-        string[3] suppliers_whitelist;
+        address requester;
+        address issuer;
+        string[3] suppliers_whitelist; // list of addresses TODO
         uint request_time_max;
         uint request_time;
         uint tca_min;
@@ -53,10 +66,8 @@ contract ConsensusS1 {
 
     // Mockup event for a request
     event evt_cdm_request(CDMRequest req);
-    event evt_insight_received(address supplier, address requester);
-    event evt_insight_calculated(string request_id, mcdm);
-
-    mcdm[] public cdms;
+    event evt_insight_received(string request_id, mcdm supplier_cdm);
+    event evt_insight_calculated(string request_id, ccdm);
 
     // ------------- CONSENSUS CONTRACT ROUTINES
     /// @param authorized_caller Authorized contract address taht can call the
@@ -84,8 +95,8 @@ contract ConsensusS1 {
 
         emit evt_cdm_request(
             CDMRequest(
-              msg.sender,
-              "0xCCC",
+              msg.sender, // TODO
+              msg.sender, // TODO
               ["0xAEDE111", "0xAEDE222","0xAEDE333"],
               0,
               0, // now
@@ -94,10 +105,14 @@ contract ConsensusS1 {
               ["satid1", "satid2"]
             )
         );
+
+        // DEBUG
+        calculate("request_id-12345678");
     }
 
-    // ----------------------------- CONSENSUS PART
-    function _is_all_data_here(string request_id, address[] min_supplier_list) private returns (bool) {
+    // Request part manages check if all data as arrived before calling the
+    // consensus function
+    function _is_all_data_here(string memory request_id, address[] memory min_supplier_list) private returns (bool) {
         // obvious fast check, if we have less replies than suppliers
         // the contract surely need to wait longer
         if (req2mcdm[request_id].length < min_supplier_list.length) {
@@ -106,31 +121,34 @@ contract ConsensusS1 {
 
         // if not, then how many unique suppliers do we have:
         for (uint i = 0; i < req2mcdm[request_id].length; i++) {
+        }
 
-
-        return true;
+        // TODO if all present
+        // emit launch_cdm_processing(request_id)
     }
 
-    function _this_supplier_belief(address supplier) private returns (ufixed) {
+    // ----------------------------- CONSENSUS PART
+    function _this_supplier_belief(address supplier) private returns (/*ufixed*/ uint) {
         // mockup, TODO
-        return 0.8;
+        return 999999998;
     }
 
     /// @notice Calculates consensus and only emits a consensus result event for
     ///         mockup purposes 
     /// @param request_id is the hash of the request ID of the requester
     ///                   contract linked to the current consensus contract
-    function calculate(string request_id) public returns (mcdm) {
+    function calculate(string memory request_id) public {
         // TODO check if all data is here
 
-        // Gather confidence models from suppliers
-        mapping (address => ufixed) s2belief;
+        /*********
+        // Map confidence models to suppliers
+        mapping(address => uint) storage  s2belief;
         // Mapping to check last data from supplier 
-        mapping (address => uint) s2rtrvd;
+        mapping(address => uint) storage s2rtrvd;
 
-        // Gather confidence models from suppliers
+        // --- Gather confidence models from suppliers
         // and prepare Bayes Fusion
-        ufixed belief_sum = 0.0;
+        //ufixed// uint belief_sum = 0.0;
         for (uint i = 0; i < req2mcdm[request_id].length; i++) {
             // Suppliers can set data several times
             // they are only paid once per request.
@@ -158,9 +176,27 @@ contract ConsensusS1 {
         //     req2mcdm[request_id].length; i++) {
         //     req2mcdm[request_id][i].pc
         // }
+        *********/
 
-        //emit calculation done
-         
+        // emit finished calculation
+        ccdm memory consensus = ccdm("event-id-81732-0xahudegywde",
+        block.timestamp, block.timestamp, 400000, 414, [msg.sender, msg.sender],
+        [msg.sender, msg.sender, msg.sender], 600000);
+        /*
+          "event-id-81732-0xahudegywde",
+          block.timestamp, // created
+          block.timestamp, // tca
+          0.004, // pc
+          414.5, // distance_m
+          [msg.sender, msg.sender], // rsos
+          [msg.sender, msg.sender, msg.sender], // suppliers
+          0.6 // consensus_level
+        */
+
+        emit evt_insight_calculated(
+            request_id,
+            consensus
+        );
     }
 
     /// @notice set a cdm from a supplier
@@ -169,19 +205,19 @@ contract ConsensusS1 {
     ///                   should have listened too and registered. Implicitly
     ///                   contains information about which satellites are
     ///                   involved in the conjunction
-    /// @param cdm_pc ufixeding point precision probability for probability of
+    /// @param cdm_pc /*ufixed*/ uinting point precision probability for probability of
     ///                collision
     /// @param cdm_tca uint of unix timestamp in seconds
     function set_data(string memory request_id,
-                      ufixed cdm_pc,
-                      uint cdm_tca) public returns (bool) {
+                      /*ufixed*/ uint cdm_pc,
+                      uint cdm_tca) public {
         // Unix time in seconds is block.timestamp
 
         // --- TODO check if supplier is a registrered supplier
         address supplier_addr = msg.sender;
 
         // --- TODO check inputs
-        if (cdm_pc > 1.0 || cdm_pc < 0.0) {
+        if (cdm_pc > 1 || cdm_pc < 999999999) {
             return false;
         } else {
             if (cdm_pc > MAX_PROBABILITY) {
@@ -201,10 +237,10 @@ contract ConsensusS1 {
         // Create entries in local mappings
         // Suppliers can set data several times
         // they are only paid once per request.
-        mcdm input = mcdm(cdm_pc, cdm_tca, supplier_addr, block.timestamp);
-        req2mcdm[request_id].push(input);
+        mcdm memory supplier_input = mcdm(cdm_pc, cdm_tca, supplier_addr, block.timestamp);
+        req2mcdm[request_id].push(supplier_input);
 
-        emit evt_insight_received(supplier_addr, requester);
+        emit evt_insight_received(request_id, supplier_input);
     }
 
 
