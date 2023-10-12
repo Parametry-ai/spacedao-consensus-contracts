@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 pragma solidity ^0.8.9;
 import "hardhat/console.sol";
+import "./commons.sol";
 
 /// @title Contract for consensus on scalar value version 1 so S1
 /// @author Red Boumghar @redotics
@@ -12,6 +13,7 @@ contract ConsensusS1 {
 
     // List of callers authorized to call consensus calculation
     address[] private _authorized_callers;
+
     // Unix timestamps in second of construction time
     uint private _creation_time;
     string public anything;
@@ -120,11 +122,37 @@ contract ConsensusS1 {
         }
 
         // if not, then how many unique suppliers do we have:
+        uint nb_unique = 0;
+        // TODO 10 is a risk if 10 < min_supplier_list.length
+        // but this is how I can get things going on.
+        // TO BE ROBUSTIFIED
+        address[10] memory unique_suppliers;
         for (uint i = 0; i < req2mcdm[request_id].length; i++) {
+            // TODO
+            if (commons.exists_in_address10array(
+                        req2mcdm[request_id][i].supplier,
+                        unique_suppliers) == false)
+            {
+                unique_suppliers[nb_unique] = req2mcdm[request_id][i].supplier;
+                nb_unique += 1;
+            }
+
+
+            if (nb_unique >=  min_supplier_list.length)
+            {
+                return true;
+            }
         }
+
+        if (unique_suppliers.length < min_supplier_list.length)
+        {
+            return false;
+        }
+
 
         // TODO if all present
         // emit launch_cdm_processing(request_id)
+        return true;
     }
 
     // ----------------------------- CONSENSUS PART
@@ -210,7 +238,8 @@ contract ConsensusS1 {
     /// @param cdm_tca uint of unix timestamp in seconds
     function set_data(string memory request_id,
                       /*ufixed*/ uint cdm_pc,
-                      uint cdm_tca) public {
+                      uint cdm_tca) 
+             public returns(bool) {
         // Unix time in seconds is block.timestamp
 
         // --- TODO check if supplier is a registrered supplier
@@ -241,8 +270,10 @@ contract ConsensusS1 {
         req2mcdm[request_id].push(supplier_input);
 
         emit evt_insight_received(request_id, supplier_input);
+        return true;
     }
 
 
     // --- function set_consensus
+    // TODO
 }
