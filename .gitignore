@@ -1,6 +1,7 @@
 credentials.json
 
 node_modules
+package-lockc.json
 .env
 coverage
 coverage.json
@@ -12,3 +13,5 @@ cache
 artifacts
 
 *.swp
+
+dapp

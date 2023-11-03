@@ -246,6 +246,7 @@ contract ConsensusS1 {
         address supplier_addr = msg.sender;
 
         // --- TODO check inputs
+        // --- THIS WILL ALWAYS BE TRUE as "or" rather than "and"
         if (cdm_pc > 1 || cdm_pc < 999999999) {
             return false;
         } else {
