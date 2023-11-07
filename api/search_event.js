@@ -7,9 +7,6 @@ const path = require("path");
 // Change to subscription model for a proper api
 
 
-
-
-
 // Custom imports
 var web3 = new Web3(new Web3.providers.HttpProvider('http://127.0.0.1:8545'));
 const dapp_data = require("../dapp/dapp-data.json");
