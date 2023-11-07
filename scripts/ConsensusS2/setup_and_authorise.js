@@ -21,13 +21,13 @@ async function deployContract(contract_title, args=[]) {
         gasLimit: 30000000
     };
     if (args.length == 0) {
-        const dapp = await Contract.connect(await key_to_signer(creds[0])).deploy(tx_params);
+        var dapp = await Contract.connect(await key_to_signer(creds[0])).deploy(tx_params);
     } else if (args.length == 1) {
-        const dapp = await Contract.connect(await key_to_signer(creds[0])).deploy(args[0], tx_params)
+        var dapp = await Contract.connect(await key_to_signer(creds[0])).deploy(args[0], tx_params)
     } else if (args.length == 2) {
-        const dapp = await Contract.connect(await key_to_signer(creds[0])).deploy(args[0], args[1], tx_params)
+        var dapp = await Contract.connect(await key_to_signer(creds[0])).deploy(args[0], args[1], tx_params)
     } else if (args.length == 3) {
-        const dapp = await Contract.connect(await key_to_signer(creds[0])).deploy(args[0], args[1], args[2], tx_params)
+        var dapp = await Contract.connect(await key_to_signer(creds[0])).deploy(args[0], args[1], args[2], tx_params)
     }
     const tx = await dapp.deployed();
     // console.log(await dapp.wait());
@@ -50,7 +50,7 @@ async function main() {
     const reputation_dapp = reputation_abi.attach(reputation_address);
 
     const consesus_contract_name = "ConsensusS2";
-    const consensus_address = await deployContract(consesus_contract_name, [user_info_address]);
+    const consensus_address = await deployContract(consesus_contract_name, [user_info_address, reputation_address]);
     const consensus_abi = await ethers.getContractFactory(consesus_contract_name);
     const consensus_dapp = consensus_abi.attach(consensus_address);
 

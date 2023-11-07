@@ -4,6 +4,7 @@ pragma solidity ^0.8.9;
 import "./UserInfo.sol";
 import "./Reputation.sol";
 
+
 /// @title Contract for consensus on scalar value version 2 so S2
 /// @author Robert Cowlishaw @0x365, Red Boumghar @redotics
 /// @notice You can use this contract for needs of scalar based consensus like a probability
@@ -58,9 +59,11 @@ contract ConsensusS2 {
     /// @notice Gets app address of a deployed UserInfo contract
     /// @param _userInfoAppAddress Address of deployed UserInfo contract
     constructor (
-        address _userInfoAppAddress
+        address _userInfoAppAddress,
+        address _reputationAppAddress
     ) {
         userInfoApp = UserInfo(_userInfoAppAddress);
+        reputationApp = Reputation(_reputationAppAddress);
         /// --- This can now be called to access the user info contract
     }
 
