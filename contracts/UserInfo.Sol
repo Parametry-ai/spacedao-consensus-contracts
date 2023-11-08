@@ -6,7 +6,7 @@ pragma solidity ^0.8.9;
 /// @dev WIP --- Not tested just an example
 contract UserInfo {
     
-    uint public id_counter;
+    uint public id_counter = 1;
 
     // Map user address to id values
     mapping (address => uint) map_id;
@@ -63,6 +63,12 @@ contract UserInfo {
         });
         // Increment id counter for next new user
          id_counter += 1;
+    }
+
+    /// @notice Returns the ID of the caller
+    /// @return ID the id of the caller
+    function whatIsMyID () public view returns(uint) {
+        return map_id[msg.sender];
     }
 
     /// @notice Change info that doesnt require admin privaliges
