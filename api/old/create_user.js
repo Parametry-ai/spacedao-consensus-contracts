@@ -9,42 +9,38 @@ const hre = require("hardhat");
 const path = require("path");
 const { Signer, Wallet } = require("ethers");
 
-const {creds} = require("./credentials.json");
-const {config} = require("./config.json");
+// User defined data
+const creds = require("./credentials.json");
+const config = require("./config.json");
 
-// Converts private key to a signer
 async function key_to_signer(priv) {
+    // Converts private key to a signer
     const provider = hre.ethers.provider;
     const signer_wallet = new Wallet(priv);
     const signer = signer_wallet.connect(provider);
     return signer;
 }
 
-
 async function main() {
-
+    // Creates new user or renames current user info at input address
+    // Set input parameters
     let name_ = "TestName"
-
     tx_params = {
         gasLimit: 30000000
     };
-
     // Connect to Consensus App
     const consensus_contract_name = config.ContractVersion.Consensus;
     const consensus_address = config.AppAddress.Consensus
     const consensus_abi = await ethers.getContractFactory(consensus_contract_name);
-    const consensus_dapp = consensus_abi.attach(consensus_address);
-
+    const consensus_dapp = await consensus_abi.attach(consensus_address);
     // Connect to UserInfo App
     const user_info_contract_name = config.ContractVersion.UserInfo
-    const user_info_address = consensus_dapp.userInfoApp().toString();  // Gets user_info_address from consensus app
+    const user_info_address = (await consensus_dapp.userInfoApp()).toString();  // Gets user_info_address from consensus app
     const user_info_abi = await ethers.getContractFactory(user_info_contract_name);
-    const user_info_dapp = user_info_abi.attach(user_info_address);
-
+    const user_info_dapp = await user_info_abi.attach(user_info_address);
     // Get id from UserInfo App
-    my_id = await user_info_dapp.connect(await key_to_signer(creds.private_key)).whatIsMyID();
-    console.log(my_id)
-
+    my_id = await user_info_dapp.connect(await key_to_signer(creds.private_key)).whatIsMyID(tx_params);
+    my_id = Number(my_id)   // Convert from big int to regular int
     // If id == 0 account does not exist
     if (my_id == 0) {
         console.log("Account doesnt exist. Creating new account....")
@@ -52,11 +48,10 @@ async function main() {
         console.log(tx);
     // Else account already exists and id was returned
     } else {
-        console.log("Account already exists at id=", my_id,". Changing name on account to _name")
+        console.log("Account already exists at id=", my_id,". Changing name on account to", name_)
         tx = await user_info_dapp.connect(await key_to_signer(creds.private_key)).changeName(name_, tx_params);
         console.log(tx);
     }
-
 }
 
 // We recommend this pattern to be able to use async/await everywhere

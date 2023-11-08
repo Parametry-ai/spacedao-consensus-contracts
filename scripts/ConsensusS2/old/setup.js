@@ -20,16 +20,20 @@ async function main() {
     const user_info_address = await deployContract(user_info_contract_name, [name_]);
     const user_info_abi = await ethers.getContractFactory(user_info_contract_name);
     const user_info_dapp = user_info_abi.attach(user_info_address);
+    console.log(user_info_contract_name, "Contract Deployed")
     // Deploys Reputation Contract
     const reputation_contract_name = "Reputation";
     const reputation_address = await deployContract(reputation_contract_name);
     const reputation_abi = await ethers.getContractFactory(reputation_contract_name);
     const reputation_dapp = reputation_abi.attach(reputation_address);
+    console.log(reputation_contract_name, "Contract Deployed")
     // Deploys ConsensusS2 Contract
     const consensus_contract_name = "ConsensusS2";
     const consensus_address = await deployContract(consensus_contract_name, [user_info_address, reputation_address]);
     const consensus_abi = await ethers.getContractFactory(consensus_contract_name);
     const consensus_dapp = consensus_abi.attach(consensus_address);
+    console.log(consensus_contract_name, "Contract Deployed")
+    console.log("COMPLETED - All Contracts Deployed")
 }
 
 main().catch((error) => {

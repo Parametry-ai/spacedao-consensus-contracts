@@ -49,7 +49,7 @@ contract UserInfo {
         public
     {
         // Assert that address doesnt already have an id
-        assert(map_id[msg.sender] != 0);
+        assert(map_id[msg.sender] == 0);
         // Give address new id
         map_id[msg.sender] = id_counter;
         // Give id new user data
