@@ -1,0 +1,11 @@
+// Builds the dapp from dapp_data
+export async function _build_dapp(dapp_address, abi) {
+    _provider = new ethers.providers.Web3Provider(window.ethereum);
+
+    dapp_ = new ethers.Contract(
+        dapp_address,
+        abi,
+        _provider.getSigner(0)
+    );
+    return dapp_
+}

@@ -1,33 +1,58 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 // Notice: Function that deploys smart contract ConsensusS2.sol
+//         and authorises all keys in batch_authorise
 // Date: Nov-23
 // Author: Robert Cowlishaw @0x365
 
 import hre from "hardhat";
 import path from "path";
-import {Wallet} from "ethers"
+import { Wallet, BaseContract } from "ethers"
 import fs from "fs";
 
-// Change auto for required account
-const creds = hre.config.networks.auto.accounts
+import default_keys from "../../batch_authorise.json";
 
 async function main() {
     // Main function to call deploy contracts for each required contract
     let name_ = "firstStarterName"
     // Deploys UserInfo Contract
     const user_info_contract_name = "UserInfo";
-    const user_info_address = await deployContract(user_info_contract_name, [name_]);
-    console.log(user_info_contract_name, "Contract Deployed")
+    const app_UserInfo = await deployContract(user_info_contract_name, [name_]);
+    if (app_UserInfo == null) {
+        return
+    } else {
+        console.log(user_info_contract_name, "Contract Deployed")
+    }
+
     // Deploys Reputation Contract
     const reputation_contract_name = "Reputation";
-    const reputation_address = await deployContract(reputation_contract_name);
-    console.log(reputation_contract_name, "Contract Deployed")
+    const app_Reputation = await deployContract(reputation_contract_name);
+    if (app_Reputation == null) {
+        return
+    } else {
+        console.log(reputation_contract_name, "Contract Deployed")
+    }
     // Deploys ConsensusS2 Contract
     const consensus_contract_name = "ConsensusS2";
-    await deployContract(consensus_contract_name, [user_info_address, reputation_address]);
+    await deployContract(consensus_contract_name, [app_UserInfo.address, app_Reputation.address]);
     console.log(consensus_contract_name, "Contract Deployed")
     console.log("COMPLETED - All Contracts Deployed")
+
+    // This authorises all accounts in batch_authorise on deploy
+    let tx_params = {
+        gasLimit: 30000000
+    };
+    for (let i=0; i<default_keys.to_authorise.public.length; i++) {
+        let id_ = await app_UserInfo.whatIsID(default_keys.to_authorise.public[i], tx_params);
+        let tx = await app_UserInfo.givePrivilages(
+            id_,
+            true,
+            true,
+            true,
+            tx_params
+        );
+    }
+    console.log("All default keys authorised");
 }
 
 main().catch((error) => {
@@ -63,11 +88,11 @@ async function deployContract(contract_title: string, args?: any) {
     } else if (args.length == 3) {
         dapp = await Contract.deploy(args[0], args[1], args[2], tx_params);
     } else {
-        return "Failed to deploy";
+        return null;
     }
     const tx = await dapp.deployed();
     save_artifacts(contract_title, dapp, tx.deployTransaction.chainId);
-    return dapp.address
+    return dapp
 }
 
 function jsonConcat(o1: any, o2: any) {

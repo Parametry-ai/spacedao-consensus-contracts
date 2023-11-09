@@ -52,6 +52,7 @@ contract ConsensusS2 {
     }
 
     /// @notice type for a consensus result
+    /// @dev WIP
     struct ConsensusResult {
         address temp;
     }

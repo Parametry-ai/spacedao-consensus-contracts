@@ -71,6 +71,12 @@ contract UserInfo {
         return map_id[msg.sender];
     }
 
+    /// @notice Returns the ID of the input address
+    /// @return ID the id of the input address
+    function whatIsID (address find) public view returns(uint) {
+        return map_id[find];
+    }
+
     /// @notice Change info that doesnt require admin privaliges
     /// @param _name New name that user would like on profile
     function changeName (
