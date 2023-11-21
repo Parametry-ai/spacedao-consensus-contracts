@@ -29,6 +29,7 @@
     "hardhat": "^2.13.1"
   },
   "dependencies": {
+    "ethereum-waffle": "^4.0.10",
     "web3": "^4.2.2"
   }
 }
