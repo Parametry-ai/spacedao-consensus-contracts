@@ -86,46 +86,35 @@ async function request_new_data_all() {
     const { app_Consensus, app_UserInfo, app_Reputation, KeySigner } = await loadFixture(deployBaseConsensus);
     for (let i = 0; i < get_data("new_data_requests_list").length; i++) {
         let data = get_data("new_data_requests_list")[i]
-        await expect(await app_Consensus.connect(await data.caller)
+        let tx = await app_Consensus.connect(await data.caller)
             .newDataRequest(
                 data.input_data[0], data.input_data[1], 
                 data.input_data[2], data.input_data[3], 
                 data.tx_params
             )
-        )
-        .to.emit(
+        await expect(tx).to.emit(
             app_Consensus, "NewCDMRequest"
         )
-        .withNamedArgs({new_request: anyValue});
-
-        // READ THIS https://ethereum-waffle.readthedocs.io/en/latest/matchers.html
-
-        // .withArgs(
-        //     CDMRequest
-        // );
+        let receipt = await tx.wait();
+        let event_args = receipt.events[0].args[0]
         
-        // let tx = await app_Consensus.connect(await data.caller)
-        //     .newDataRequest(
-        //         data.input_data[0], data.input_data[1], 
-        //         data.input_data[2], data.input_data[3], 
-        //         data.tx_params
-        // )
-        // let receipt = await tx.wait()
-        // for (const event of receipt.events) {
-        //     console.log(`Event ${event.event} with args ${event.args}`);
-        // }
+        // Checks all parameters of request
+        expect(event_args.requester).to.equal(data.caller_pub);
+        expect(event_args.issuer).to.equal(data.caller_pub);
+        for (let j = 0; j < data.input_data[0].length; j++) {
+            expect(event_args.suppliers_whitelist[j]).to.equal(data.input_data[0][j]);
+        }
+        expect(Number(event_args.request_time_max)).to.equal(0);
+        expect(Number(event_args.tca_min)).to.equal(data.input_data[1]);
+        expect(Number(event_args.tca_max)).to.equal(data.input_data[2]);
+        for (let j = 0; j < data.input_data[3].length; j++) {
+            expect(event_args.rso_list[j]).to.equal(data.input_data[3][j]);
+        }
+        // Checks timestamp is between -100s and +100s from now
+        expect(Number(event_args.request_time)).to.be.greaterThan(await time.latest()-100);
+        expect(Number(event_args.request_time)).to.be.lessThan(await time.latest()+100);
     };
     return { app_Consensus, app_UserInfo, app_Reputation }
 };
-
-
-// address requester;  // msg.sender
-//         address issuer;     // msg.sender
-//         address[3] suppliers_whitelist; // list of addresses TODO
-//         uint request_time_max;  // ?
-//         uint request_time;  // Time Now
-//         uint tca_min;       // Time input
-//         uint tca_max;       // Time input 2
-//         string[2] rso_list; // Sat Data
 
 export {deployBaseConsensus, request_new_data_single, request_new_data_all};

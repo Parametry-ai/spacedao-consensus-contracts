@@ -31,15 +31,10 @@ describe("ConsensusS2", function () {
 
   describe("New Data Request", async function () {
     it("Should call request new data function", async function () {
-      const { app_Consensus, app_UserInfo, app_Reputation, tx_list } = await loadFixture(request_new_data_all);
-
-      app_Consensus
-
-      //console.log(tx_list);
-      // await expect(await request_new_data(app_Consensus, caller, input_data, tx_params))
-      //   .to.emit(app_Consensus, "NewCDMRequest");
-      
+      await loadFixture(request_new_data_all);      
+      // const { app_Consensus, app_UserInfo, app_Reputation } = await loadFixture(request_new_data_all);      
     });
+
   });
 
 });
