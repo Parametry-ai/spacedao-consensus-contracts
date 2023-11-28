@@ -25,7 +25,7 @@ Before starting `credentials.json` should be created. Duplicate the `credentials
 
 A general overview of the current idea for architecture is given in the image below. The directory is split into `./contracts` for solidity smart contracts, `./scripts` for typescript scripts to call smart contracts, `./tests` for typescript tests to test the smart contracts and `./archived` for reference data and other code.
 
-![alt text](https://gitlab.com/parametry-ai/space-dao/contracts/spacedao-consensus-contracts/-/blob/main/docs/spacedao_stm_architecture.svg "Current architecture")
+![Contract Architecture Figure](./docs/spacedao_stm_architecture.svg "Current architecture")
 
 ## Dev
 
