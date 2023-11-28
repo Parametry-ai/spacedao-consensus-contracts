@@ -23,9 +23,19 @@ Before starting `credentials.json` should be created. Duplicate the `credentials
 
 ## About
 
+### Overview
 A general overview of the current idea for architecture is given in the image below. The directory is split into `./contracts` for solidity smart contracts, `./scripts` for typescript scripts to call smart contracts, `./tests` for typescript tests to test the smart contracts and `./archived` for reference data and other code.
 
 ![Contract Architecture Figure](./docs/spacedao_stm_architecture.svg "Current architecture")
+
+### Glossary
+
+    - CDM: conjunction data message (all information about two space object
+      dangerously getting closer)
+    - TCA: time of closest approach (when are these objects crossing each other)
+    - PC: probability of collision (it is used like an emergency score in the end)
+    - RSO: resident space object (technical word to name anything in space, from
+      active satellites to debris to asteroids)
 
 ## Dev
 
