@@ -3,6 +3,7 @@ pragma solidity ^0.8.9;
 
 import "./UserInfo.sol";
 import "./Reputation.sol";
+import "hardhat/console.sol";
 
 
 /// @title Contract for consensus on scalar value version 2 so S2
@@ -117,7 +118,8 @@ contract ConsensusS2 {
 
         // Check if msg.sender has already provided data (cdm_provided at msg.sender exists)
             // Maybe only pass if data doesnt exist or allow updates to cdm provided
-        assert(cdm_provided[_target_address][_target_nonce][msg.sender].unix_secs != 0);
+        //assert(cdm_provided[_target_address][_target_nonce][msg.sender].unix_secs != 0);
+
         // Create new_object
         MCDM memory new_cdm = MCDM(
             _pc,                                // uint pc;
@@ -129,6 +131,7 @@ contract ConsensusS2 {
         cdm_provided[_target_address][_target_nonce][msg.sender] = new_cdm;
         cdm_providers[_target_address][_target_nonce].push(msg.sender);
         // emit NewCDM
+        // WIP --- Want to add more data so you can see what satellites and what requester
         emit NewCDM(new_cdm);
         
         if (_checkTimeout(_target_address, _target_nonce)) {

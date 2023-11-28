@@ -67,18 +67,52 @@ async function deployContract(contract_title: string, KeySigner: any, args?: any
 }
 
 
+// async function request_new_data_single() {
+//     // Sends single data request to consensus app
+//     let tx_list = [];
+//     let data = get_data("new_data_requests_list")[0]
+//     const { app_Consensus, app_UserInfo, app_Reputation, KeySigner } = await loadFixture(deployBaseConsensus);
+//     let tx = await app_Consensus.connect(await data.caller)
+//         .newDataRequest(data.input_data[0], data.input_data[1], 
+//                         data.input_data[2], data.input_data[3], 
+//                         data.tx_params)
+//     tx.data = "data..."
+//     tx_list.push(tx)
+//     return { app_Consensus, app_UserInfo, app_Reputation, tx_list }
+// };
+
 async function request_new_data_single() {
-    // Sends single data request to consensus app
-    let tx_list = [];
-    let data = get_data("new_data_requests_list")[0]
+    // Sends all data request to consensus app
     const { app_Consensus, app_UserInfo, app_Reputation, KeySigner } = await loadFixture(deployBaseConsensus);
+    let data = get_data("new_data_requests_list")[0]
     let tx = await app_Consensus.connect(await data.caller)
-        .newDataRequest(data.input_data[0], data.input_data[1], 
-                        data.input_data[2], data.input_data[3], 
-                        data.tx_params)
-    tx.data = "data..."
-    tx_list.push(tx)
-    return { app_Consensus, app_UserInfo, app_Reputation, tx_list }
+        .newDataRequest(
+            data.input_data[0], data.input_data[1], 
+            data.input_data[2], data.input_data[3], 
+            data.tx_params
+        )
+    await expect(tx).to.emit(
+        app_Consensus, "NewCDMRequest"
+    )
+    let receipt = await tx.wait();
+    let event_args = receipt.events[0].args[0]
+    
+    // Checks all parameters of request
+    expect(event_args.requester).to.equal(data.caller_pub);
+    expect(event_args.issuer).to.equal(data.caller_pub);
+    for (let j = 0; j < data.input_data[0].length; j++) {
+        expect(event_args.suppliers_whitelist[j]).to.equal(data.input_data[0][j]);
+    }
+    expect(Number(event_args.request_time_max)).to.equal(0);
+    expect(Number(event_args.tca_min)).to.equal(data.input_data[1]);
+    expect(Number(event_args.tca_max)).to.equal(data.input_data[2]);
+    for (let j = 0; j < data.input_data[3].length; j++) {
+        expect(event_args.rso_list[j]).to.equal(data.input_data[3][j]);
+    }
+    // Checks timestamp is between -100s and +100s from now
+    expect(Number(event_args.request_time)).to.be.greaterThan(await time.latest()-100);
+    expect(Number(event_args.request_time)).to.be.lessThan(await time.latest()+100);
+    return { app_Consensus, app_UserInfo, app_Reputation }
 };
 
 async function request_new_data_all() {
