@@ -33,13 +33,25 @@ const all_data = {
     {
       "caller": key_to_signer(def_k.private_key_list[2]),
       "caller_pub": def_k.public_key_list[2],
-      "input_data": [def_k.public_key_list[1], 1, 4324, 4533],
+      "input_data": [def_k.public_key_list[1], 0, 4324, 4533],
       "tx_params": {gasLimit: 30000000}
     },
     {
       "caller": key_to_signer(def_k.private_key_list[5]),
       "caller_pub": def_k.public_key_list[5],
-      "input_data": [def_k.public_key_list[1], 1, 2131, 543],
+      "input_data": [def_k.public_key_list[1], 0, 2131, 543],
+      "tx_params": {gasLimit: 30000000}
+    },
+    {
+      "caller": key_to_signer(def_k.private_key_list[3]),
+      "caller_pub": def_k.public_key_list[3],
+      "input_data": [def_k.public_key_list[1], 0, 4324, 4533],
+      "tx_params": {gasLimit: 30000000}
+    },
+    {
+      "caller": key_to_signer(def_k.private_key_list[4]),
+      "caller_pub": def_k.public_key_list[4],
+      "input_data": [def_k.public_key_list[1], 0, 4324, 4533],
       "tx_params": {gasLimit: 30000000}
     }
   ]

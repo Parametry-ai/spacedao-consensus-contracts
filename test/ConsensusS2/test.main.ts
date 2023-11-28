@@ -42,8 +42,8 @@ describe("ConsensusS2", function () {
     // WIP --- Test bad inputs
   });
 
-  describe("Submit Data", async function () {
 
+  describe("Submit Data", async function () {
     it("Should allow for whitelisted users to submit data and emit event", async function () {
       const { app_Consensus, app_UserInfo, app_Reputation } = await loadFixture(request_new_data_single);
       let data = get_data("new_cdm_submit")[0]
@@ -53,7 +53,6 @@ describe("ConsensusS2", function () {
             data.input_data[2], data.input_data[3], 
             data.tx_params
         )
-
       await expect(tx).to.emit(
         app_Consensus, "NewCDM"
       )
@@ -66,7 +65,6 @@ describe("ConsensusS2", function () {
       expect(Number(event_args.unix_secs)).to.be.greaterThan(await time.latest()-100);
       expect(Number(event_args.unix_secs)).to.be.lessThan(await time.latest()+100);
     });
-
     it("Should allow for anyone to submit data and emit event", async function () {
       const { app_Consensus, app_UserInfo, app_Reputation } = await loadFixture(request_new_data_single);
       let data = get_data("new_cdm_submit")[0]
@@ -76,7 +74,6 @@ describe("ConsensusS2", function () {
             data.input_data[2], data.input_data[3], 
             data.tx_params
         )
-
       await expect(tx).to.emit(
         app_Consensus, "NewCDM"
       )
@@ -89,15 +86,53 @@ describe("ConsensusS2", function () {
       expect(Number(event_args.unix_secs)).to.be.greaterThan(await time.latest()-100);
       expect(Number(event_args.unix_secs)).to.be.lessThan(await time.latest()+100);
     });
-
     it("Should complete when whitelists have all submitted data", async function () {
-      expect(1).to.equal(2)
+      const { app_Consensus, app_UserInfo, app_Reputation } = await loadFixture(request_new_data_single);
+      for (let i = 0; i < (get_data("new_cdm_submit")).length; i++ ) {
+        let data = get_data("new_cdm_submit")[i]
+        let tx = await app_Consensus.connect(await data.caller)
+        .submitData(
+            data.input_data[0], data.input_data[1], 
+            data.input_data[2], data.input_data[3], 
+            data.tx_params
+        )
+        if (i == (get_data("new_cdm_submit")).length-1) {
+          await expect(tx).to.emit(
+            app_Consensus, "NewConsensusResult"
+          )
+        } else {
+          await expect(tx).not.to.emit(
+            app_Consensus, "NewConsensusResult"
+          )
+        }
+      }
     });
-
     it("Should complete if timer runs out", async function () {
-      expect(1).to.equal(2)
+      const { app_Consensus, app_UserInfo, app_Reputation } = await loadFixture(request_new_data_single);
+      let data = get_data("new_cdm_submit")[0]
+      let tx = await app_Consensus.connect(await data.caller)
+      .submitData(
+          data.input_data[0], data.input_data[1], 
+          data.input_data[2], data.input_data[3], 
+          data.tx_params
+      )
+      await expect(tx).not.to.emit(
+        app_Consensus, "NewConsensusResult"
+      )
+      // Skip time
+      await time.increase(1100);
+      // Submit new cdm after time passed
+      data = get_data("new_cdm_submit")[1]
+      tx = await app_Consensus.connect(await data.caller)
+      .submitData(
+          data.input_data[0], data.input_data[1], 
+          data.input_data[2], data.input_data[3], 
+          data.tx_params
+      )
+      await expect(tx).to.emit(
+        app_Consensus, "NewConsensusResult"
+      )
     });
-    
     // WIP --- Test bad inputs
   });
 

@@ -15,6 +15,8 @@ contract ConsensusS2 {
     UserInfo public userInfoApp;
     Reputation public reputationApp;
 
+    uint64 public REQUEST_TIMEOUT = 1000;
+
     event NewCDMRequest(CDMRequest new_request);
     event NewCDM(MCDM new_cdm);
     event NewConsensusResult(ConsensusResult new_consensus);
@@ -86,7 +88,7 @@ contract ConsensusS2 {
             msg.sender,                     // address requester;
             msg.sender,                     // address issuer;
             _suppliers_whitelist,           // string[3] suppliers_whitelist;
-            0,                              // uint request_time_max;
+            REQUEST_TIMEOUT,                // uint request_time_max;
             block.timestamp,                // uint request_time;
             _tca_min,                       // uint tca_min;
             _tca_max,                       // uint tca_max;
@@ -131,9 +133,9 @@ contract ConsensusS2 {
         cdm_provided[_target_address][_target_nonce][msg.sender] = new_cdm;
         cdm_providers[_target_address][_target_nonce].push(msg.sender);
         // emit NewCDM
-        // WIP --- Want to add more data so you can see what satellites and what requester
+        // WIP --- Want to add more data so you can see what satellites and what
         emit NewCDM(new_cdm);
-        
+
         if (_checkTimeout(_target_address, _target_nonce)) {
             // If request timed_out
             checkConsensus();
@@ -205,6 +207,8 @@ contract ConsensusS2 {
     ) 
         internal
     {
+        emit NewConsensusResult(ConsensusResult(msg.sender));
+
         // WIP --- NEED TO KNOW HOW CONSENSUS WILL BE REACHED
     }
 }

@@ -103,7 +103,7 @@ async function request_new_data_single() {
     for (let j = 0; j < data.input_data[0].length; j++) {
         expect(event_args.suppliers_whitelist[j]).to.equal(data.input_data[0][j]);
     }
-    expect(Number(event_args.request_time_max)).to.equal(0);
+    expect(Number(event_args.request_time_max)).to.equal(1000);     // WIP -- Change to vary with pub var on contract
     expect(Number(event_args.tca_min)).to.equal(data.input_data[1]);
     expect(Number(event_args.tca_max)).to.equal(data.input_data[2]);
     for (let j = 0; j < data.input_data[3].length; j++) {
@@ -138,7 +138,7 @@ async function request_new_data_all() {
         for (let j = 0; j < data.input_data[0].length; j++) {
             expect(event_args.suppliers_whitelist[j]).to.equal(data.input_data[0][j]);
         }
-        expect(Number(event_args.request_time_max)).to.equal(0);
+        expect(Number(event_args.request_time_max)).to.equal(1000);     // WIP -- Change to vary with pub var on contract
         expect(Number(event_args.tca_min)).to.equal(data.input_data[1]);
         expect(Number(event_args.tca_max)).to.equal(data.input_data[2]);
         for (let j = 0; j < data.input_data[3].length; j++) {
