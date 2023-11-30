@@ -58,7 +58,7 @@ contract UserInfo {
         // Give address new id
         id_counter.increment();
         uint new_id_counter = id_counter.current();
-        map_id[msg.sender] = id_counter;
+        map_id[msg.sender] = new_id_counter;
         // Give id new user data
         map_user_data[new_id_counter] = UserData({
             user_address: msg.sender,

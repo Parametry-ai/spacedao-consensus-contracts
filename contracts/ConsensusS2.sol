@@ -144,10 +144,10 @@ contract ConsensusS2 {
         
         if (_checkTimeout(_target_address, _target_nonce)) {
             // If request timed_out
-            checkConsensus();
+            checkConsensus(_target_address, _target_nonce);
         } else if (checkWhitelist(_target_address, _target_nonce)) {
             // Check if all whitelist has been reached (if all whitelist in cdm_providers list)
-            checkConsensus();
+            checkConsensus(_target_address, _target_nonce);
         }
         // (ideally put events in the end of function to prevent reentrancy attacks)
         // emit NewCDM 
@@ -210,22 +210,22 @@ contract ConsensusS2 {
         assert(_checkTimeout(_target_address, _target_nonce));
         // Check if logic is safe changing assert by require
         // require(_checkTimeout(_target_address, _target_nonce), "Request has not timed out");
-        checkConsensus();
+        checkConsensus(_target_address, _target_nonce);
     }
 
     /// @notice Checks the consensus score
     /// @dev Must only be called from inside contract to reduce asserts
-    function checkConsensus(_target_address, _target_nonce) 
+    function checkConsensus(address _target_address, uint _target_nonce) 
         internal
     {
         // WIP --- NEED TO KNOW HOW CONSENSUS WILL BE REACHED
 
         // First example :
-        uint totalPoviders = cdm_provided[_target_address][_target_nonce].length;
+        uint totalProviders = cdm_providers[_target_address][_target_nonce].length;
         uint consensusCount = 0;
         
         for(uint i = 0; i < totalProviders; i++){
-            address provider = cdm_provided[_target_address][_target_nonce][i];
+            address provider = cdm_providers[_target_address][_target_nonce][i];
             MCDM storage data = cdm_provided[_target_address][_target_nonce][provider];
         
             // Add your consensus logic here.
@@ -246,3 +246,4 @@ contract ConsensusS2 {
 
         }
 }
+
