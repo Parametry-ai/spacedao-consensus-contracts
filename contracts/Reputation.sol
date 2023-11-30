@@ -1,10 +1,14 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 pragma solidity ^0.8.9;
 
+import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
+
 /// @title Contract for storing reputation of users based on address
 /// @author Robert Cowlishaw @0x365
 /// @dev WIP --- Not tested just an example
 contract Reputation {
+
+    using SafeMath for uint256;
 
     // Map user address to reputation values
     mapping (address => uint) rep;

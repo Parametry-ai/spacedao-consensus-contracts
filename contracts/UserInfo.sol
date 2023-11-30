@@ -1,12 +1,16 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 pragma solidity ^0.8.9;
 
+import {Counters} from "@openzeppelin/contracts/utils/Counters.sol";
+
 /// @title Contract for storing permissions and information of users
 /// @author Robert Cowlishaw @0x365
 /// @dev WIP --- Not tested just an example
 contract UserInfo {
-    
-    uint public id_counter = 1;
+
+    using Counters for Counters.Counter;
+
+    Counters.Counter private id_counter;
 
     // Map user address to id values
     mapping (address => uint) map_id;
@@ -28,8 +32,10 @@ contract UserInfo {
     constructor (
         string memory _name
     ) {
-        map_id[msg.sender] = id_counter;
-        map_user_data[id_counter] = UserData({
+        id_counter.increment();
+        uint new_id_counter = id_counter.current();
+        map_id[msg.sender] = new_id_counter;
+        map_user_data[new_id_counter] = UserData({
             user_address: msg.sender,
             name: _name,
             creation_time: block.timestamp,
@@ -37,8 +43,6 @@ contract UserInfo {
             approved_provider: true,
             admin: true
         });
-        // Increment id counter for next new user
-         id_counter += 1;
     }
 
     /// @notice Add new user
@@ -49,11 +53,14 @@ contract UserInfo {
         public
     {
         // Assert that address doesnt already have an id
+        // require(map_id[msg.sender] == 0, "Address already has an ID");
         assert(map_id[msg.sender] == 0);
         // Give address new id
+        id_counter.increment();
+        uint new_id_counter = id_counter.current();
         map_id[msg.sender] = id_counter;
         // Give id new user data
-        map_user_data[id_counter] = UserData({
+        map_user_data[new_id_counter] = UserData({
             user_address: msg.sender,
             name: _name,
             creation_time: block.timestamp,
@@ -61,8 +68,6 @@ contract UserInfo {
             approved_provider: false,
             admin: false
         });
-        // Increment id counter for next new user
-         id_counter += 1;
     }
 
     /// @notice Returns the ID of the caller
@@ -101,6 +106,7 @@ contract UserInfo {
         public
     {
         // Assert that caller is an admin
+        // require(map_user_data[map_id[msg.sender]].admin, "Caller is not an admin");
         assert(map_user_data[map_id[msg.sender]].admin = true);
         // Update privilages of input user to those of the input params
         map_user_data[_target_id].approved_requestor = _requestor_privilages;

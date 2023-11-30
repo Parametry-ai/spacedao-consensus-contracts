@@ -3,6 +3,8 @@ pragma solidity ^0.8.9;
 
 import "./UserInfo.sol";
 import "./Reputation.sol";
+import "./commons.sol";
+import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "hardhat/console.sol";
 
 
@@ -12,10 +14,14 @@ import "hardhat/console.sol";
 /// @dev WIP --- Input validation is required throughout
 contract ConsensusS2 {
 
+    using SafeMath for uint256;
+    using commons for *;
+
     UserInfo public userInfoApp;
     Reputation public reputationApp;
 
     uint64 public REQUEST_TIMEOUT = 1000;
+    uint public threshold = 75; // Example: 75%-probabilty of collision to find a consensus
 
     event NewCDMRequest(CDMRequest new_request);
     event NewCDM(MCDM new_cdm);
@@ -96,10 +102,11 @@ contract ConsensusS2 {
         );
         // Add new CDM Request to requestors list
         requests[msg.sender][request_nonce[msg.sender]] = new_request;
-        // Emit to network
-        emit NewCDMRequest(new_request);
         // Increase request count
         request_nonce[msg.sender] += 1;
+        // Emit to network
+        emit NewCDMRequest(new_request);
+        
     }
 
     /// @notice Adds new cdm data from provider
@@ -120,7 +127,9 @@ contract ConsensusS2 {
 
         // Check if msg.sender has already provided data (cdm_provided at msg.sender exists)
             // Maybe only pass if data doesnt exist or allow updates to cdm provided
-        //assert(cdm_provided[_target_address][_target_nonce][msg.sender].unix_secs != 0);
+        // assert(cdm_provided[_target_address][_target_nonce][msg.sender].unix_secs != 0);
+        // Replace assert by require
+        // require(cdm_provided[_target_address][_target_nonce][msg.sender].unix_secs == 0, "Data already submitted");
 
         // Create new_object
         MCDM memory new_cdm = MCDM(
@@ -132,10 +141,7 @@ contract ConsensusS2 {
         // add new object to cdm_provided[requestor_address][request_nonce][msg.sender]
         cdm_provided[_target_address][_target_nonce][msg.sender] = new_cdm;
         cdm_providers[_target_address][_target_nonce].push(msg.sender);
-        // emit NewCDM
-        // WIP --- Want to add more data so you can see what satellites and what
-        emit NewCDM(new_cdm);
-
+        
         if (_checkTimeout(_target_address, _target_nonce)) {
             // If request timed_out
             checkConsensus();
@@ -143,6 +149,11 @@ contract ConsensusS2 {
             // Check if all whitelist has been reached (if all whitelist in cdm_providers list)
             checkConsensus();
         }
+        // (ideally put events in the end of function to prevent reentrancy attacks)
+        // emit NewCDM 
+        // WIP --- Want to add more data so you can see what satellites and what
+        emit NewCDM(new_cdm);
+
     }
 
     /// @notice Checks if request has timed out
@@ -197,18 +208,41 @@ contract ConsensusS2 {
     {
         // Assert request has timed out
         assert(_checkTimeout(_target_address, _target_nonce));
+        // Check if logic is safe changing assert by require
+        // require(_checkTimeout(_target_address, _target_nonce), "Request has not timed out");
         checkConsensus();
     }
 
     /// @notice Checks the consensus score
     /// @dev Must only be called from inside contract to reduce asserts
-    function checkConsensus(
-
-    ) 
+    function checkConsensus(_target_address, _target_nonce) 
         internal
     {
-        emit NewConsensusResult(ConsensusResult(msg.sender));
-
         // WIP --- NEED TO KNOW HOW CONSENSUS WILL BE REACHED
-    }
+
+        // First example :
+        uint totalPoviders = cdm_provided[_target_address][_target_nonce].length;
+        uint consensusCount = 0;
+        
+        for(uint i = 0; i < totalProviders; i++){
+            address provider = cdm_provided[_target_address][_target_nonce][i];
+            MCDM storage data = cdm_provided[_target_address][_target_nonce][provider];
+        
+            // Add your consensus logic here.
+            // For example, check if the collision probability (pc) is above a certain threshold.
+
+            if (data.pc >= threshold) {
+                consensusCount++;
+            }
+        }
+
+         // Check if consensus is reached (e.g., majority agrees on collision)
+        if (consensusCount > totalProviders / 2) {
+            // Consensus reached, take appropriate action.
+            // This might involve triggering alerts, updating a status, or other actions based on your specific use case.
+            emit NewConsensusResult(ConsensusResult(msg.sender));
+            // Additional logic based on consensus reached.
+        }
+
+        }
 }
