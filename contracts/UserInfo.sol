@@ -18,6 +18,9 @@ contract UserInfo {
 
     // @notice Counter of userIds
     Counters.Counter private _userIds;
+    // @notice Counter of ratingIds
+    Counters.Counter private _ratingIds;
+
 
     /// Companies whitelist (Gasless optimized +++)
     /// @notice one user initiated as whitelisted with his _userId (gasless alternative to mapping)
@@ -202,8 +205,16 @@ contract UserInfo {
         require(bytes(_comment).length > 0, "Comment cannot be empty.");
 
         // Incrementation of the ratingId
-        uint newRatingId = map_user_data[_userId].numRatings; // Use numRatings to ID the rating
-        // Updating rating mapping
+        // Give address new id
+        _ratingIds.increment();
+        uint newRatingId = _ratingIds.current();
+
+        // UPDATES
+        // Update 1 : increment numRatings of the user
+        map_user_data[_userId].numRatings += 1;
+        // Update 2 : add the value to reputation of the user
+        map_user_data[_userId].totalReputation += _value;
+        // Update 3 : update rating mapping
         map_user_ratings[_userId][newRatingId] = Rating({
             ratingId: newRatingId,
             rater: msg.sender,
@@ -213,9 +224,6 @@ contract UserInfo {
         // Updating user ratings properties mapping
         // map_user_data[_userId].totalReputation = SafeMath.add(map_user_data[_userId].totalReputation, _value);
         // map_user_data[_userId].numRatings = SafeMath.add(map_user_data[_userId].numRatings, 1);
-
-        map_user_data[_userId].totalReputation += _value;
-        map_user_data[_userId].numRatings += 1;
 
         emit UserRated(_userId, msg.sender, newRatingId, _value, _comment);
         emit UserReputationChanged(_userId, map_user_data[_userId].numRatings > 0 ?
