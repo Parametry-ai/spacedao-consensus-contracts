@@ -2,8 +2,8 @@
 pragma solidity ^0.8.9;
 
 import {Counters} from "@openzeppelin/contracts/utils/Counters.sol";
-import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import {BitMaps} from "@openzeppelin/contracts/utils/structs/BitMaps.sol";
+// import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol"; (Openzeppelin VERSION 4)
 
 /// @title Contract for storing permissions and information of users
 /// @author Antoine Delamare
@@ -11,7 +11,7 @@ import {BitMaps} from "@openzeppelin/contracts/utils/structs/BitMaps.sol";
 contract UserInfo {
 
     using Counters for Counters.Counter; // openzeppelin's secure increment smart contract
-    using SafeMath for uint256; // openzeppelin's secure arithmetic operations smart contract
+    // using SafeMath for uint256; // openzeppelin's secure arithmetic operations smart contract (VERSION 4)
 
     // @notice adminOwner = owner of this smart contract
     address private immutable adminOwner;
@@ -179,9 +179,13 @@ contract UserInfo {
     /// @param _userId The id to check
     /// @return uint Returns average rating of one user (with _userId)
     function getReputation(uint _userId) external view returns (uint) {
-    return map_user_data[_userId].numRatings > 0
-        ? SafeMath.div(map_user_data[_userId].totalReputation, map_user_data[_userId].numRatings)
+        return map_user_data[_userId].numRatings > 0 ?
+        map_user_data[_userId].totalReputation / map_user_data[_userId].numRatings
         : 0;
+
+    // return map_user_data[_userId].numRatings > 0
+    //     ? SafeMath.div(map_user_data[_userId].totalReputation, map_user_data[_userId].numRatings)
+    //     : 0;
     }
 
     /// @notice Rate an approved user
@@ -207,14 +211,21 @@ contract UserInfo {
             comment: _comment
         });
         // Updating user ratings properties mapping
-        map_user_data[_userId].totalReputation = SafeMath.add(map_user_data[_userId].totalReputation, _value);
-        map_user_data[_userId].numRatings = SafeMath.add(map_user_data[_userId].numRatings, 1);
+        // map_user_data[_userId].totalReputation = SafeMath.add(map_user_data[_userId].totalReputation, _value);
+        // map_user_data[_userId].numRatings = SafeMath.add(map_user_data[_userId].numRatings, 1);
+
+        map_user_data[_userId].totalReputation += _value;
+        map_user_data[_userId].numRatings += 1;
 
         emit UserRated(_userId, msg.sender, newRatingId, _value, _comment);
-        emit UserReputationChanged(_userId, map_user_data[_userId].numRatings > 0
-            ? SafeMath.div(map_user_data[_userId].totalReputation, map_user_data[_userId].numRatings)
+        emit UserReputationChanged(_userId, map_user_data[_userId].numRatings > 0 ?
+            map_user_data[_userId].totalReputation / map_user_data[_userId].numRatings
             : 0
-        );
+            );
+        // emit UserReputationChanged(_userId, map_user_data[_userId].numRatings > 0
+        //     ? SafeMath.div(map_user_data[_userId].totalReputation, map_user_data[_userId].numRatings)
+        //     : 0
+        // );
     }
 
     /// @notice Check if the msg.sender is an approved admin (Gasless optimized +++)
