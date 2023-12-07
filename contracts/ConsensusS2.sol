@@ -1,249 +1,220 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 pragma solidity ^0.8.9;
 
-import "./UserInfo.sol";
-import "./Reputation.sol";
-import "./commons.sol";
-import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "hardhat/console.sol";
+import {Counters} from "@openzeppelin/contracts/utils/Counters.sol";
+import {BitMaps} from "@openzeppelin/contracts/utils/structs/BitMaps.sol";
+// import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol"; (Openzeppelin VERSION 4)
+
+/// @title Contract for storing permissions and information of users
+/// @author Antoine Delamare
+/// @dev WIP --- check if rating logic & newUser whitelist creation convenient | add a merkleProof verification for the whitelist logic
+contract UserInfo {
+
+    using Counters for Counters.Counter; // openzeppelin's secure increment smart contract
+    // using SafeMath for uint256; // openzeppelin's secure arithmetic operations smart contract (VERSION 4)
+
+    // @notice adminOwner = owner of this smart contract
+    address private immutable adminOwner;
+
+    // @notice Counter of userIds
+    Counters.Counter private _userIds;
 
 
-/// @title Contract for consensus on scalar value version 2 so S2
-/// @author Robert Cowlishaw @0x365, Red Boumghar @redotics
-/// @notice You can use this contract for needs of scalar based consensus like a probability
-/// @dev WIP --- Input validation is required throughout
-contract ConsensusS2 {
+    /// Companies whitelist (Gasless optimized +++)
+    /// @notice one user initiated as whitelisted with his _userId (gasless alternative to mapping)
+    BitMaps.BitMap private providers_whiteList;
+    // @dev Library for managing uint256 to bool mapping in a compact and efficient way, provided the keys are sequential.
+    // Largely inspired by Uniswap's https://github.com/Uniswap/merkle-distributor/blob/master/contracts/MerkleDistributor.sol[merkle-distributor].
+    // BitMaps pack 256 booleans across each bit of a single 256-bit slot of uint256 type.
+    // Hence booleans corresponding to 256 sequential indices would only consume a single slot,
+    // unlike the regular bool which would consume an entire slot for a single value.
+    // This results in gas savings in two ways:
+    // 1) Setting a zero value to non-zero only once every 256 times
+    // 2) Accessing the same warm slot for every 256 sequential indices
 
-    using SafeMath for uint256;
-    using commons for *;
 
-    UserInfo public userInfoApp;
-    Reputation public reputationApp;
+    // ROLES OF USER
+    // @notice Role.None : naive (unspecified) user
+    // @notice Role.Requestor : Requestor is the spacecraft operator or an automated schedule (from the space operator)
+    // @notice Role.Provider : Provider is the company monitoring space sending data to the consensus contract to respond to the request.
+    // @notice Role.Admin : owner of this smart contract (give privilages)
+    enum Role {Requestor, Provider, Admin}
 
-    uint64 public REQUEST_TIMEOUT = 1000;
-    uint public threshold = 75; // Example: 75%-probabilty of collision to find a consensus
+     // Struct User
+    struct UserData {
+        uint256 userId; // id of the user
+        address user_address; // address of the user
+        string name; // name of the user
+        uint creation_time; // timestamp of the creation
+        uint256 reliability; // Probabilité continue de fiabilité
+        Role role; // Role of the user (initiated at None for all users, excepting adminOwner)
+        bool active; // check if user active or not
+    }
 
-    event NewCDMRequest(CDMRequest new_request);
-    event NewCDM(MCDM new_cdm);
-    event NewConsensusResult(ConsensusResult new_consensus);
+    // Map id value to all user data
+    mapping (uint => UserData) internal map_user_data;
+    // Map user address to id values
+    mapping (address => uint) internal map_id;
+    
 
-    mapping(address => uint) request_nonce;
-    mapping(address => mapping(uint => CDMRequest)) requests;
+    /// @notice Give first deployer admin privilages and userId 1
+    /// @param _name Name that user would like on profile
+    constructor (
+        string memory _name
+    ) {
+        adminOwner = msg.sender; // AdminOwner immutable initiated
+        newUser(_name); // First user adminOwner (Role.Admin) initiated
+    }
 
-    // Requestor -> Requestor_Nonce -> provider_address -> mcdm
-    // --- This second address works because we can search through the whitelist
-    mapping(address => mapping(uint => mapping(address => MCDM))) cdm_provided;
-    // List of cdm providers for specific request
-    mapping(address => mapping(uint => address[])) cdm_providers;
+    /// @notice modifier for adminOwner, owner of this smart contract (Gasless optimized +++)
+    modifier onlyAdmin() {
+        _checkAdmin();
+        _;
+    }
 
-    /// @notice contains all fields for a proper CDM request
-    struct CDMRequest {
-        address requester;  // msg.sender
-        address issuer;     // msg.sender
-        address[3] suppliers_whitelist; // list of addresses TODO
-        uint request_time_max;  // ?
-        uint request_time;  // Time Now
-        uint tca_min;       // Time input
-        uint tca_max;       // Time input 2
-        string[2] rso_list; // Sat Data
+    /// @notice Add new user (with role Role.None or Role.admin if adminOwner == msg.sender)
+    /// @param _name Name that user would like on profile
+    /// @dev WIP --- Is the enum logic convenient ?
+    function newUser(
+        string memory _name
+    )
+        public
+    {
+        // Assert that address doesnt already have an id
+        require(map_id[msg.sender] <= _userIds.current(), "User already exists");
+        require(!map_user_data[map_id[msg.sender]].active, "msg.sender can only be created as newUser once");
+        // Give address new id
+        _userIds.increment();
+        uint newUserId = _userIds.current();
+        map_id[msg.sender] = newUserId;
+
+        // Give id new user data
+        Role initialRole = (msg.sender == adminOwner) ? Role.Admin : Role.Requestor;
+
+        // Give id new user data
+        map_user_data[newUserId] = UserData({
+            userId: newUserId,
+            user_address: msg.sender,
+            name: _name,
+            creation_time: block.timestamp,
+            role: initialRole,
+            reliability: 500, // Set an initial reliability value (adjust as needed)
+            active: true
+        });
+    }
+
+    /// @notice Returns the ID of the caller
+    /// @return ID the id of the caller
+    /// @dev WIP --- is it convenient to keep whatsIsMyId if we can find an user with userId ?
+    function whatIsMyID() public view returns(uint) {
+        return map_id[msg.sender];
+    }
+
+    /// @notice Returns the ID of the input address
+    /// @return ID the id of the input address
+    /// @dev WIP --- is it convenient to keep whatsIsID if we can find an user with userId ?
+    function whatIsID(address find) public view returns(uint) {
+        return map_id[find];
+    }
+
+    /// @notice Change info that doesnt require admin privilages
+    /// @param _name New name that user would like on profile
+    /// @dev WIP --- is the require logic of check if an user is Role.None correctly implementated ?
+    function changeName (
+        string memory _name
+    )
+        external
+    {
+        require(map_user_data[map_id[msg.sender]].role != Role.Requestor, "Not authorized. Only attributed Roles can change their names");
+        map_user_data[map_id[msg.sender]].name = _name;
+    }
+
+    /// @notice Change privilages of the target id if caller is admin (Gasless optimized +++)
+    /// @param _userId | change Role of a User if User active & add _userId to whitelist if Role is Role.Provider
+    /// @dev WIP --- if validated, need to add a MerkleProof logic to secure the whitelist
+    function givePrivilages (
+        uint _userId,
+        Role _role
+    ) 
+        external onlyAdmin
+    {
+        // Check if userId already created
+        require(_userId <= _userIds.current(), "Invalid target user ID");
+        // Check if user is activated
+        require(!map_user_data[_userId].active, "User does not exist");
+        // Check if role of userId is Requestor
+        require(map_user_data[_userId].role == Role.Requestor, "New role must be at least Requestor to be changed");
+
+        // UPDATES
+        // Update 1 : privilages of input user changed to requestor, provider or admin
+        map_user_data[_userId].role = _role;
+
+        if(_role == Role.Provider){
+            // Check if user is out of whitelist
+            require(!BitMaps.get(providers_whiteList, _userId), "User already whitelisted");
+            // Update 2 : set user as whitelisted with BitMaps logic
+            BitMaps.setTo(providers_whiteList, _userId, true);
+        }
+
+    }
+
+    /// @notice get an array of all activated users inside UserInfo.sol
+    /// @return UserData[] Returns all properties of each UserData struct of this smart contract
+    function getAllUsers() public view returns (UserData[] memory) {
+      uint256 totalUserCount = _userIds.current();
+      uint256 currentIndex = 0;
+
+      UserData[] memory users = new UserData[](totalUserCount);
+      for (uint i = 0; i < totalUserCount; i++) {
+        uint currentId = map_user_data[i + 1].userId;
+        UserData storage currentUser = map_user_data[currentId];
+        users[currentIndex] = currentUser;
+        currentIndex += 1;
+      }
+      return users;
     }
     
-    /// @notice type for a minimum conjunction data message 
-    struct MCDM {
-        // Probability of collusion
-        /*ufixed*/ uint pc;
-        // Time to Closest Approach in seconds unix timestamps
-        uint tca;
-        // Supplier address
-        address supplier;
-        // stored time
-        uint unix_secs;
+    /// @notice get an UserData struct by this userID
+    /// @param _userId The id to check
+    /// @return UserData Returns all properties of the UserData by his userId
+    function getUser(uint _userId) public view returns (UserData memory) {
+        return map_user_data[_userId];
     }
 
-    /// @notice type for a consensus result
-    /// @dev WIP
-    struct ConsensusResult {
-        address temp;
-    }
+    /// @notice get an array of all whitelisted providers inside UserInfo.sol
+    /// @return address[] Returns addresses of all UserData whitelisted as providers of this smart contract
+    function getProvidersWhitelist() public view returns (address[] memory) {
+        uint totalUserCount = _userIds.current();
+        uint providerCount = 0;
+        uint currentIndex = 0;
 
-    /// @notice Gets app address of a deployed UserInfo contract
-    /// @param _userInfoAppAddress Address of deployed UserInfo contract
-    constructor (
-        address _userInfoAppAddress,
-        address _reputationAppAddress
-    ) {
-        userInfoApp = UserInfo(_userInfoAppAddress);
-        reputationApp = Reputation(_reputationAppAddress);
-        /// --- This can now be called to access the user info contract
-    }
-
-    /// @notice New Data Request ending in emit event
-    /// @dev WIP --- Some CDM Request data is missing
-    function newDataRequest(
-        address[3] memory _suppliers_whitelist,
-        uint _tca_min,
-        uint _tca_max,
-        string[2] memory _rso_list
-    ) 
-        public
-    {
-        // WIP --- Check input data
-        
-        // Create new CDM Request
-        CDMRequest memory new_request = CDMRequest(
-            msg.sender,                     // address requester;
-            msg.sender,                     // address issuer;
-            _suppliers_whitelist,           // string[3] suppliers_whitelist;
-            REQUEST_TIMEOUT,                // uint request_time_max;
-            block.timestamp,                // uint request_time;
-            _tca_min,                       // uint tca_min;
-            _tca_max,                       // uint tca_max;
-            _rso_list                       // string[2] rso_list;
-        );
-        // Add new CDM Request to requestors list
-        requests[msg.sender][request_nonce[msg.sender]] = new_request;
-        // Increase request count
-        request_nonce[msg.sender] += 1;
-        // Emit to network
-        emit NewCDMRequest(new_request);
-        
-    }
-
-    /// @notice Adds new cdm data from provider
-    /// @dev Entry point for checkConsensus
-    /// @param _target_address Address of the requestor
-    /// @param _target_nonce The nonce of the the request for the specific requestor
-    /// @param _pc Probability of collision
-    /// @param _tca Time of closest approach
-    function submitData(
-        address _target_address,
-        uint _target_nonce,
-        uint _pc,
-        uint _tca
-    )
-        public
-    {
-        // WIP --- Check data input
-
-        // Check if msg.sender has already provided data (cdm_provided at msg.sender exists)
-            // Maybe only pass if data doesnt exist or allow updates to cdm provided
-        // assert(cdm_provided[_target_address][_target_nonce][msg.sender].unix_secs != 0);
-        // Replace assert by require
-        // require(cdm_provided[_target_address][_target_nonce][msg.sender].unix_secs == 0, "Data already submitted");
-
-        // Create new_object
-        MCDM memory new_cdm = MCDM(
-            _pc,                                // uint pc;
-            _tca,                               // uint tca;
-            msg.sender,                        // address supplier;
-            block.timestamp                    // uint unix_secs;
-        ); 
-        // add new object to cdm_provided[requestor_address][request_nonce][msg.sender]
-        cdm_provided[_target_address][_target_nonce][msg.sender] = new_cdm;
-        cdm_providers[_target_address][_target_nonce].push(msg.sender);
-        
-        if (_checkTimeout(_target_address, _target_nonce)) {
-            // If request timed_out
-            checkConsensus(_target_address, _target_nonce);
-        } else if (checkWhitelist(_target_address, _target_nonce)) {
-            // Check if all whitelist has been reached (if all whitelist in cdm_providers list)
-            checkConsensus(_target_address, _target_nonce);
-        }
-        // (ideally put events in the end of function to prevent reentrancy attacks)
-        // emit NewCDM 
-        // WIP --- Want to add more data so you can see what satellites and what
-        emit NewCDM(new_cdm);
-
-    }
-
-    /// @notice Checks if request has timed out
-    /// @param _target_address Address of the requestor
-    /// @param _target_nonce The nonce of the the request for the specific requestor
-    /// @return bool Returns true or false if request has timed out
-    function _checkTimeout(
-        address _target_address,
-        uint _target_nonce
-    )
-        public
-        view
-        returns (bool)
-    {
-        if (block.timestamp > requests[_target_address][_target_nonce].request_time + requests[_target_address][_target_nonce].request_time_max) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    /// @notice Checks if full whitelist has been completed
-    /// @param _target_address Address of the requestor
-    /// @param _target_nonce The nonce of the the request for the specific requestor
-    /// @return bool true or false if whitelist completed
-    function checkWhitelist(
-        address _target_address,
-        uint _target_nonce
-    )
-        public
-        view
-        returns (bool)
-    {
-        address[3] memory whitelist = requests[_target_address][_target_nonce].suppliers_whitelist;
-        for (uint i=0; i<whitelist.length; i++) {
-            if (cdm_provided[_target_address][_target_nonce][whitelist[i]].unix_secs == 0) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /// @notice Calls checkConsensus if timed out
-    /// @dev Entry point for checkConsensus
-    /// @param _target_address Address of the requestor
-    /// @param _target_nonce The nonce of the the request for the specific requestor
-    function forceTimeout(
-        address _target_address,
-        uint _target_nonce
-    )
-        public
-    {
-        // Assert request has timed out
-        assert(_checkTimeout(_target_address, _target_nonce));
-        // Check if logic is safe changing assert by require
-        // require(_checkTimeout(_target_address, _target_nonce), "Request has not timed out");
-        checkConsensus(_target_address, _target_nonce);
-    }
-
-    /// @notice Checks the consensus score
-    /// @dev Must only be called from inside contract to reduce asserts
-    function checkConsensus(address _target_address, uint _target_nonce) 
-        internal
-    {
-        // WIP --- NEED TO KNOW HOW CONSENSUS WILL BE REACHED
-
-        // First example :
-        uint totalProviders = cdm_providers[_target_address][_target_nonce].length;
-        uint consensusCount = 0;
-        
-        for(uint i = 0; i < totalProviders; i++){
-            address provider = cdm_providers[_target_address][_target_nonce][i];
-            MCDM storage data = cdm_provided[_target_address][_target_nonce][provider];
-        
-            // Add your consensus logic here.
-            // For example, check if the collision probability (pc) is above a certain threshold.
-
-            if (data.pc >= threshold) {
-                consensusCount++;
+        // Count the number of providers
+        for (uint i = 0; i < totalUserCount; i++) {
+            uint currentId = map_user_data[i + 1].userId;
+            if (BitMaps.get(providers_whiteList, currentId)) {
+                providerCount += 1;
             }
         }
 
-         // Check if consensus is reached (e.g., majority agrees on collision)
-        if (consensusCount > totalProviders / 2) {
-            // Consensus reached, take appropriate action.
-            // This might involve triggering alerts, updating a status, or other actions based on your specific use case.
-            emit NewConsensusResult(ConsensusResult(msg.sender));
-            // Additional logic based on consensus reached.
+        // Create an array of addresses for providers
+        address[] memory providers = new address[](providerCount);
+
+        // Populate the array with addresses of providers
+        for (uint i = 0; i < totalUserCount; i++) {
+            uint currentId = map_user_data[i + 1].userId;
+            if (BitMaps.get(providers_whiteList, currentId)) {
+                address providerAddress = map_user_data[currentId].user_address;
+                providers[currentIndex] = providerAddress;
+                currentIndex += 1;
+            }
         }
 
-        }
+        return providers;
+    }
+
+    /// @notice Check if the msg.sender is an approved admin (Gasless optimized +++)
+    function _checkAdmin() internal view virtual {
+        require(map_user_data[map_id[msg.sender]].role == Role.Admin, "Not authorized. Admin only");
+    }
+    
 }
-
