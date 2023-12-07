@@ -8,7 +8,7 @@ import {BitMaps} from "@openzeppelin/contracts/utils/structs/BitMaps.sol";
 /// @title Contract for storing permissions and information of users
 /// @author Antoine Delamare
 /// @dev WIP --- check if rating logic & newUser whitelist creation convenient | add a merkleProof verification for the whitelist logic
-contract UserInfo {
+contract SpaceDAOID {
 
     using Counters for Counters.Counter; // openzeppelin's secure increment smart contract
     // using SafeMath for uint256; // openzeppelin's secure arithmetic operations smart contract (VERSION 4)
@@ -16,13 +16,19 @@ contract UserInfo {
     // @notice adminOwner = owner of this smart contract
     address private immutable adminOwner;
 
+    // @notice admin_list = admins of this smart contract + uint _team_length
+    address[] private _team_admin;
+    string[] private _team_names;
+    uint private immutable _team_length;
+
     // @notice Counter of userIds
     Counters.Counter private _userIds;
 
-
     /// Companies whitelist (Gasless optimized +++)
     /// @notice one user initiated as whitelisted with his _userId (gasless alternative to mapping)
-    BitMaps.BitMap private providers_whiteList;
+    BitMaps.BitMap private admins_list;
+    BitMaps.BitMap private providers_list;
+    BitMaps.BitMap private requestors_list;
     // @dev Library for managing uint256 to bool mapping in a compact and efficient way, provided the keys are sequential.
     // Largely inspired by Uniswap's https://github.com/Uniswap/merkle-distributor/blob/master/contracts/MerkleDistributor.sol[merkle-distributor].
     // BitMaps pack 256 booleans across each bit of a single 256-bit slot of uint256 type.
@@ -32,38 +38,46 @@ contract UserInfo {
     // 1) Setting a zero value to non-zero only once every 256 times
     // 2) Accessing the same warm slot for every 256 sequential indices
 
-
-    // ROLES OF USER
-    // @notice Role.None : naive (unspecified) user
-    // @notice Role.Requestor : Requestor is the spacecraft operator or an automated schedule (from the space operator)
-    // @notice Role.Provider : Provider is the company monitoring space sending data to the consensus contract to respond to the request.
-    // @notice Role.Admin : owner of this smart contract (give privilages)
-    enum Role {Requestor, Provider, Admin}
-
-     // Struct User
+    // Struct User
     struct UserData {
         uint256 userId; // id of the user
         address user_address; // address of the user
         string name; // name of the user
         uint creation_time; // timestamp of the creation
         uint256 reliability; // Probabilité continue de fiabilité
-        Role role; // Role of the user (initiated at None for all users, excepting adminOwner)
         bool active; // check if user active or not
     }
 
     // Map id value to all user data
-    mapping (uint => UserData) internal map_user_data;
+    mapping (uint => UserData) private map_user_data;
     // Map user address to id values
-    mapping (address => uint) internal map_id;
+    mapping (address => uint) private map_id;
     
 
     /// @notice Give first deployer admin privilages and userId 1
-    /// @param _name Name that user would like on profile
-    constructor (
-        string memory _name
-    ) {
+    /// @param _admin_names Name that user would like on profile & _admin_address address that user would use
+    constructor (string memory _adminOwner_name, string[] memory _admin_names, address[] memory _admin_addresses) {
+        require(msg.sender != address(0), "Invalid admin address");
+        require(_admin_addresses.length > 0 && _admin_names.length > 0, "At least one admin address is required");
+        require(_admin_names.length == _admin_addresses.length, "Mismatched array lengths");
         adminOwner = msg.sender; // AdminOwner immutable initiated
-        newUser(_name); // First user adminOwner (Role.Admin) initiated
+        _team_admin = _admin_addresses;
+        _team_names = _admin_names;
+        _team_length = _admin_addresses.length;
+
+        // Initialize admins_list
+        if (msg.sender == adminOwner) {
+            uint256 currentUserId = newUser(_adminOwner_name, msg.sender);
+            require(!BitMaps.get(admins_list, currentUserId), "Admin already exists");
+            BitMaps.setTo(admins_list, currentUserId, true);
+        }
+        // Initialize admins_list
+        for (uint i = 0; i < _team_length; i++) {
+            uint currentUserId = newUser(_admin_names[i], _admin_addresses[i]); // Create new user for each admin
+            require(!BitMaps.get(admins_list, currentUserId), "Admin already exists");
+            BitMaps.setTo(admins_list, currentUserId, true);
+        }
+        
     }
 
     /// @notice modifier for adminOwner, owner of this smart contract (Gasless optimized +++)
@@ -71,25 +85,20 @@ contract UserInfo {
         _checkAdmin();
         _;
     }
+    
 
     /// @notice Add new user (with role Role.None or Role.admin if adminOwner == msg.sender)
     /// @param _name Name that user would like on profile
     /// @dev WIP --- Is the enum logic convenient ?
-    function newUser(
-        string memory _name
-    )
-        public
-    {
+    function newUser(string memory _name, address _user_address) public returns(uint256) {
         // Assert that address doesnt already have an id
-        require(map_id[msg.sender] <= _userIds.current(), "User already exists");
-        require(!map_user_data[map_id[msg.sender]].active, "msg.sender can only be created as newUser once");
+        uint currentUserId = whatIsID(_user_address);
+        require(currentUserId <= _userIds.current(), "User already exists");
+        require(!getUser(currentUserId).active, "msg.sender can only be created as newUser once");
         // Give address new id
         _userIds.increment();
         uint newUserId = _userIds.current();
         map_id[msg.sender] = newUserId;
-
-        // Give id new user data
-        Role initialRole = (msg.sender == adminOwner) ? Role.Admin : Role.Requestor;
 
         // Give id new user data
         map_user_data[newUserId] = UserData({
@@ -97,10 +106,11 @@ contract UserInfo {
             user_address: msg.sender,
             name: _name,
             creation_time: block.timestamp,
-            role: initialRole,
             reliability: 500, // Set an initial reliability value (adjust as needed)
             active: true
         });
+        return newUserId;
+
     }
 
     /// @notice Returns the ID of the caller
@@ -120,42 +130,31 @@ contract UserInfo {
     /// @notice Change info that doesnt require admin privilages
     /// @param _name New name that user would like on profile
     /// @dev WIP --- is the require logic of check if an user is Role.None correctly implementated ?
-    function changeName (
-        string memory _name
-    )
-        external
-    {
-        require(map_user_data[map_id[msg.sender]].role != Role.Requestor, "Not authorized. Only attributed Roles can change their names");
-        map_user_data[map_id[msg.sender]].name = _name;
+    function changeName (string memory _name) external {
+        uint userId = whatIsMyID();
+        // require(getUser(userId).role != Role.REQUESTOR, "Not authorized. Only attributed Roles can change their names");
+        map_user_data[userId].name = _name;
     }
 
     /// @notice Change privilages of the target id if caller is admin (Gasless optimized +++)
     /// @param _userId | change Role of a User if User active & add _userId to whitelist if Role is Role.Provider
     /// @dev WIP --- if validated, need to add a MerkleProof logic to secure the whitelist
-    function givePrivilages (
-        uint _userId,
-        Role _role
-    ) 
-        external onlyAdmin
-    {
+    function givePrivilages(uint _userId) external onlyAdmin {
         // Check if userId already created
         require(_userId <= _userIds.current(), "Invalid target user ID");
         // Check if user is activated
-        require(!map_user_data[_userId].active, "User does not exist");
-        // Check if role of userId is Requestor
-        require(map_user_data[_userId].role == Role.Requestor, "New role must be at least Requestor to be changed");
+        require(getUser(_userId).active, "User does not exist");
 
         // UPDATES
         // Update 1 : privilages of input user changed to requestor, provider or admin
-        map_user_data[_userId].role = _role;
+        // map_user_data[_userId].role = _role;
 
-        if(_role == Role.Provider){
-            // Check if user is out of whitelist
-            require(!BitMaps.get(providers_whiteList, _userId), "User already whitelisted");
-            // Update 2 : set user as whitelisted with BitMaps logic
-            BitMaps.setTo(providers_whiteList, _userId, true);
-        }
-
+        // if(_role == Role.PROVIDER){
+        //     // Check if user is out of whitelist
+        //     require(!BitMaps.get(providers_whiteList, _userId), "User already whitelisted");
+        //     // Update 2 : set user as whitelisted with BitMaps logic
+        //     BitMaps.setTo(providers_whiteList, _userId, true);
+        // }
     }
 
     /// @notice get an array of all activated users inside UserInfo.sol
@@ -183,38 +182,70 @@ contract UserInfo {
 
     /// @notice get an array of all whitelisted providers inside UserInfo.sol
     /// @return address[] Returns addresses of all UserData whitelisted as providers of this smart contract
-    function getProvidersWhitelist() public view returns (address[] memory) {
+    // function getProvidersWhitelist() public view returns (address[] memory) {
+    //     uint totalUserCount = _userIds.current();
+    //     uint providerCount = 0;
+    //     uint currentIndex = 0;
+
+    //     // Count the number of providers
+    //     for (uint i = 0; i < totalUserCount; i++) {
+    //         uint currentId = map_user_data[i + 1].userId;
+    //         if (BitMaps.get(providers_whiteList, currentId)) {
+    //             providerCount += 1;
+    //         }
+    //     }
+
+    //     // Create an array of addresses for providers
+    //     address[] memory providers = new address[](providerCount);
+
+    //     // Populate the array with addresses of providers
+    //     for (uint i = 0; i < totalUserCount; i++) {
+    //         uint currentId = map_user_data[i + 1].userId;
+    //         if (BitMaps.get(providers_whiteList, currentId)) {
+    //             address providerAddress = map_user_data[currentId].user_address;
+    //             providers[currentIndex] = providerAddress;
+    //             currentIndex += 1;
+    //         }
+    //     }
+
+    //     return providers;
+    // }
+
+    /// @notice get an array of all whitelisted providers inside UserInfo.sol
+    /// @return address[] Returns addresses of all UserData whitelisted as providers of this smart contract
+    function getAdminList() public view returns (UserData[] memory) {
         uint totalUserCount = _userIds.current();
-        uint providerCount = 0;
+        uint adminCount = 0;
         uint currentIndex = 0;
 
         // Count the number of providers
         for (uint i = 0; i < totalUserCount; i++) {
             uint currentId = map_user_data[i + 1].userId;
-            if (BitMaps.get(providers_whiteList, currentId)) {
-                providerCount += 1;
+            if (BitMaps.get(admins_list, currentId)) {
+                adminCount += 1;
             }
         }
 
         // Create an array of addresses for providers
-        address[] memory providers = new address[](providerCount);
+        UserData[] memory admins = new UserData[](adminCount);
 
         // Populate the array with addresses of providers
         for (uint i = 0; i < totalUserCount; i++) {
             uint currentId = map_user_data[i + 1].userId;
-            if (BitMaps.get(providers_whiteList, currentId)) {
-                address providerAddress = map_user_data[currentId].user_address;
-                providers[currentIndex] = providerAddress;
+            if (BitMaps.get(admins_list, currentId)) {
+                UserData storage currentUser = map_user_data[currentId];
+                admins[currentIndex] = currentUser;
                 currentIndex += 1;
             }
         }
 
-        return providers;
+        return admins;
     }
 
     /// @notice Check if the msg.sender is an approved admin (Gasless optimized +++)
     function _checkAdmin() internal view virtual {
-        require(map_user_data[map_id[msg.sender]].role == Role.Admin, "Not authorized. Admin only");
+        uint userId = whatIsMyID();
+        require(BitMaps.get(admins_list, userId), "Not authorized. Admin only");
     }
     
 }
