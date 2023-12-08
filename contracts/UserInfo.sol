@@ -3,6 +3,7 @@ pragma solidity ^0.8.9;
 
 import {Counters} from "@openzeppelin/contracts/utils/Counters.sol";
 import {BitMaps} from "@openzeppelin/contracts/utils/structs/BitMaps.sol";
+import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 // import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol"; (Openzeppelin VERSION 4)
 
 /// @title Contract for storing permissions and information of users
@@ -11,24 +12,30 @@ import {BitMaps} from "@openzeppelin/contracts/utils/structs/BitMaps.sol";
 contract SpaceDAOID {
 
     using Counters for Counters.Counter; // openzeppelin's secure increment smart contract
+    using EnumerableSet for EnumerableSet.AddressSet; // openzeppelin's secure addresses set values initialization smart contract
     // using SafeMath for uint256; // openzeppelin's secure arithmetic operations smart contract (VERSION 4)
 
     // @notice adminOwner = owner of this smart contract
     address private immutable adminOwner;
 
-    // @notice admin_list = admins of this smart contract + uint _team_length
+    // @notice _team_admin = array of admins addresses of this smart contract
     address[] private _team_admin;
+    // @notice _team_names = array of admins names of this smart contract
     string[] private _team_names;
+    // @notice _team_length = length of admins names (or addresses) of this smart contract
     uint private immutable _team_length;
 
     // @notice Counter of userIds
     Counters.Counter private _userIds;
 
+    // @notice initialisation of a set of addresses for admin roles (protect duplicate addresses)
+    EnumerableSet.AddressSet private _adminAddresses;
+
     /// Companies whitelist (Gasless optimized +++)
-    /// @notice one user initiated as whitelisted with his _userId (gasless alternative to mapping)
-    BitMaps.BitMap private admins_list;
-    BitMaps.BitMap private providers_list;
-    BitMaps.BitMap private requestors_list;
+    /// @notice one user initiated as whitelisted throug his _userId (gasless alternative to mapping)
+    BitMaps.BitMap private adminIDs_list;
+    BitMaps.BitMap private providerIDs_list;
+    BitMaps.BitMap private requestorIDs_list;
     // @dev Library for managing uint256 to bool mapping in a compact and efficient way, provided the keys are sequential.
     // Largely inspired by Uniswap's https://github.com/Uniswap/merkle-distributor/blob/master/contracts/MerkleDistributor.sol[merkle-distributor].
     // BitMaps pack 256 booleans across each bit of a single 256-bit slot of uint256 type.
@@ -54,28 +61,29 @@ contract SpaceDAOID {
     mapping (address => uint) private map_id;
     
 
-    /// @notice Give first deployer admin privilages and userId 1
-    /// @param _admin_names Name that user would like on profile & _admin_address address that user would use
+    /// @notice Give firsts deployers admin privilages and userId beginning by 1
+    /// @param _adminOwner_name Return Name that the deployer user (adminOwner) would have on his profile
+    /// @param _admin_names Return array of Names that a pack of users (admins) would have on their profile
+    /// @param _admin_addresses Return array of addresses that a pack of users (admins) would use
     constructor (string memory _adminOwner_name, string[] memory _admin_names, address[] memory _admin_addresses) {
         require(msg.sender != address(0), "Invalid admin address");
         require(_admin_addresses.length > 0 && _admin_names.length > 0, "At least one admin address is required");
         require(_admin_names.length == _admin_addresses.length, "Mismatched array lengths");
+        
         adminOwner = msg.sender; // AdminOwner immutable initiated
         _team_admin = _admin_addresses;
         _team_names = _admin_names;
         _team_length = _admin_addresses.length;
 
-        // Initialize admins_list
+        // Initialize admin_owner
         if (msg.sender == adminOwner) {
-            uint256 currentUserId = newUser(_adminOwner_name, msg.sender);
-            require(!BitMaps.get(admins_list, currentUserId), "Admin already exists");
-            BitMaps.setTo(admins_list, currentUserId, true);
+            require(_adminAddresses.add(msg.sender), "Duplicate address detected in array set of admin addresses");
+            _initAdmin(_adminOwner_name, msg.sender);
         }
         // Initialize admins_list
         for (uint i = 0; i < _team_length; i++) {
-            uint currentUserId = newUser(_admin_names[i], _admin_addresses[i]); // Create new user for each admin
-            require(!BitMaps.get(admins_list, currentUserId), "Admin already exists");
-            BitMaps.setTo(admins_list, currentUserId, true);
+            require(_adminAddresses.add(_admin_addresses[i]), "Duplicate address detected in array set of admin addresses");
+            _initAdmin(_admin_names[i], _admin_addresses[i]);
         }
         
     }
@@ -92,18 +100,18 @@ contract SpaceDAOID {
     /// @dev WIP --- Is the enum logic convenient ?
     function newUser(string memory _name, address _user_address) public returns(uint256) {
         // Assert that address doesnt already have an id
-        uint currentUserId = whatIsID(_user_address);
+        uint currentUserId = whatIsAddressID(_user_address);
         require(currentUserId <= _userIds.current(), "User already exists");
         require(!getUser(currentUserId).active, "msg.sender can only be created as newUser once");
         // Give address new id
         _userIds.increment();
         uint newUserId = _userIds.current();
-        map_id[msg.sender] = newUserId;
+        map_id[_user_address] = newUserId;
 
         // Give id new user data
         map_user_data[newUserId] = UserData({
             userId: newUserId,
-            user_address: msg.sender,
+            user_address: _user_address,
             name: _name,
             creation_time: block.timestamp,
             reliability: 500, // Set an initial reliability value (adjust as needed)
@@ -117,14 +125,16 @@ contract SpaceDAOID {
     /// @return ID the id of the caller
     /// @dev WIP --- is it convenient to keep whatsIsMyId if we can find an user with userId ?
     function whatIsMyID() public view returns(uint) {
+        require(msg.sender != address(0), "Invalid admin address");
         return map_id[msg.sender];
     }
 
     /// @notice Returns the ID of the input address
     /// @return ID the id of the input address
     /// @dev WIP --- is it convenient to keep whatsIsID if we can find an user with userId ?
-    function whatIsID(address find) public view returns(uint) {
-        return map_id[find];
+    function whatIsAddressID(address _user) public view returns(uint) {
+        require(_user != address(0), "Invalid admin address");
+        return map_id[_user];
     }
 
     /// @notice Change info that doesnt require admin privilages
@@ -138,23 +148,18 @@ contract SpaceDAOID {
 
     /// @notice Change privilages of the target id if caller is admin (Gasless optimized +++)
     /// @param _userId | change Role of a User if User active & add _userId to whitelist if Role is Role.Provider
-    /// @dev WIP --- if validated, need to add a MerkleProof logic to secure the whitelist
+    /// @dev WIP --- Separate new admin privilage of provider privilage | if validated, need to add a MerkleProof logic to secure the whitelist
     function givePrivilages(uint _userId) external onlyAdmin {
         // Check if userId already created
         require(_userId <= _userIds.current(), "Invalid target user ID");
         // Check if user is activated
         require(getUser(_userId).active, "User does not exist");
 
-        // UPDATES
-        // Update 1 : privilages of input user changed to requestor, provider or admin
-        // map_user_data[_userId].role = _role;
-
-        // if(_role == Role.PROVIDER){
-        //     // Check if user is out of whitelist
-        //     require(!BitMaps.get(providers_whiteList, _userId), "User already whitelisted");
-        //     // Update 2 : set user as whitelisted with BitMaps logic
-        //     BitMaps.setTo(providers_whiteList, _userId, true);
-        // }
+        // Add the user to the providers_list
+        // Check if user is out of whitelist
+        require(!BitMaps.get(providerIDs_list, _userId), "User already designated as a provider");
+        // Update 2 : set user as whitelisted with BitMaps logic
+        BitMaps.setTo(providerIDs_list, _userId, true);
     }
 
     /// @notice get an array of all activated users inside UserInfo.sol
@@ -180,72 +185,24 @@ contract SpaceDAOID {
         return map_user_data[_userId];
     }
 
-    /// @notice get an array of all whitelisted providers inside UserInfo.sol
-    /// @return address[] Returns addresses of all UserData whitelisted as providers of this smart contract
-    // function getProvidersWhitelist() public view returns (address[] memory) {
-    //     uint totalUserCount = _userIds.current();
-    //     uint providerCount = 0;
-    //     uint currentIndex = 0;
+    /// @notice Get all admin addresses
+    /// @return address[] Returns an array of all admin addresses (Openzeppelin's EnumerableSet)
+    function getAdminAddresses() public view returns (address[] memory) {
+        require(_adminAddresses.length() > 0, "No admin addresses yet initialized");
+        return _adminAddresses.values();
+    }
 
-    //     // Count the number of providers
-    //     for (uint i = 0; i < totalUserCount; i++) {
-    //         uint currentId = map_user_data[i + 1].userId;
-    //         if (BitMaps.get(providers_whiteList, currentId)) {
-    //             providerCount += 1;
-    //         }
-    //     }
-
-    //     // Create an array of addresses for providers
-    //     address[] memory providers = new address[](providerCount);
-
-    //     // Populate the array with addresses of providers
-    //     for (uint i = 0; i < totalUserCount; i++) {
-    //         uint currentId = map_user_data[i + 1].userId;
-    //         if (BitMaps.get(providers_whiteList, currentId)) {
-    //             address providerAddress = map_user_data[currentId].user_address;
-    //             providers[currentIndex] = providerAddress;
-    //             currentIndex += 1;
-    //         }
-    //     }
-
-    //     return providers;
-    // }
-
-    /// @notice get an array of all whitelisted providers inside UserInfo.sol
-    /// @return address[] Returns addresses of all UserData whitelisted as providers of this smart contract
-    function getAdminList() public view returns (UserData[] memory) {
-        uint totalUserCount = _userIds.current();
-        uint adminCount = 0;
-        uint currentIndex = 0;
-
-        // Count the number of providers
-        for (uint i = 0; i < totalUserCount; i++) {
-            uint currentId = map_user_data[i + 1].userId;
-            if (BitMaps.get(admins_list, currentId)) {
-                adminCount += 1;
-            }
-        }
-
-        // Create an array of addresses for providers
-        UserData[] memory admins = new UserData[](adminCount);
-
-        // Populate the array with addresses of providers
-        for (uint i = 0; i < totalUserCount; i++) {
-            uint currentId = map_user_data[i + 1].userId;
-            if (BitMaps.get(admins_list, currentId)) {
-                UserData storage currentUser = map_user_data[currentId];
-                admins[currentIndex] = currentUser;
-                currentIndex += 1;
-            }
-        }
-
-        return admins;
+    /// @notice private function to initiate admin roles of users
+    function _initAdmin(string memory _name, address _user_address) private {
+        uint256 currentUserId = newUser(_name, _user_address);
+        require(!BitMaps.get(adminIDs_list, currentUserId), "Admin already exists");
+        BitMaps.setTo(adminIDs_list, currentUserId, true);
     }
 
     /// @notice Check if the msg.sender is an approved admin (Gasless optimized +++)
     function _checkAdmin() internal view virtual {
         uint userId = whatIsMyID();
-        require(BitMaps.get(admins_list, userId), "Not authorized. Admin only");
+        require(BitMaps.get(adminIDs_list, userId), "Not authorized. Admin only");
     }
     
 }
