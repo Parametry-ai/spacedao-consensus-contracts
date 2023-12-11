@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 pragma solidity ^0.8.9;
 
-import {UserInfo} from "./UserInfo.sol";
-import {Counters} from "@openzeppelin/contracts/utils/Counters.sol";
+import {UserInfo} from "./SpaceDAOID.sol";
+import {Counters} from "@openzeppelin/contracts/utils/Counters.sol";    // (Openzepplin v3, v4)
 
 /// @title Contract for managing consensus on conjunction data messages in the space domain
 /// @author Antoine Delamare
@@ -71,9 +71,54 @@ contract Consensus {
         _;
     }
 
-    /// @notice Function to make a data request
+
+    /// @notice Function to make a data request for objects that a single satellite might collide with
     /// WIP - Need to create the consensus
-    function requestData(uint _tca_min, uint _tca_max, string[2] memory _rso_list) external returns(uint256) {
+    function requestDataSingle(uint _tca_min, uint _tca_max, string[2] memory _rso_single) external returns(uint256) {
+        // Validate parameters
+        require(_tca_max >= _tca_min, "Invalid TCA parameters");
+        require(_rso_single[1] == "BLANK", "More than 1 rso object");
+        
+        // Increment nonce
+        _nonceIds.increment();
+        uint256 actualNonce = _nonceIds.current();
+
+        // Get the providers whitelist from UserInfo.sol
+        address[] memory VALID_PROVIDERS = userInfoApp.getProvidersWhitelist();
+        // Set the providers whitelist array indexes
+        uint providersCount = VALID_PROVIDERS.length; // Default to 3 providers
+        // Create an array with up to 3 "blank" addresses
+        address[] memory _providers_whitelist = new address[](3);
+
+        if (providersCount > 3) {
+           // If more than 3 providers are found, put the 3 first providers registered
+            for (uint i = 0; i < 3; i++) {
+                _providers_whitelist[i] = VALID_PROVIDERS[i];
+            }
+        } 
+    
+        // Store the request details
+        CDMrequests[msg.sender][actualNonce] = CDMRequest({
+            nonce: actualNonce,
+            requestor: msg.sender,
+            providers_whitelist: _providers_whitelist,
+            request_time_max: block.timestamp + REQUEST_TIMEOUT,
+            request_time: block.timestamp,
+            tca_min: _tca_min,
+            tca_max: _tca_max,
+            rso_list: _rso_single,
+            state: RequestState.Pending
+        });
+
+        // Emit event
+        emit newRequest(msg.sender, actualNonce);
+        return actualNonce;
+    }
+
+
+    /// @notice Function to make a data request on cdms between two satellites
+    /// WIP - Need to create the consensus
+    function requestDataPair(uint _tca_min, uint _tca_max, string[2] memory _rso_list) external returns(uint256) {
         // Validate parameters
         require(_tca_max >= _tca_min, "Invalid TCA parameters");
         

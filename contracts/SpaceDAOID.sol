@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 pragma solidity ^0.8.9;
 
-import {Counters} from "@openzeppelin/contracts/utils/Counters.sol";
-import {BitMaps} from "@openzeppelin/contracts/utils/structs/BitMaps.sol";
-import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import {Counters} from "@openzeppelin/contracts/utils/Counters.sol";    // (Openzepplin v3, v4)
+import {BitMaps} from "@openzeppelin/contracts/utils/structs/BitMaps.sol";  // (Openzepplin v5)
+import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";  // (Openzepplin v5 in uitls/structs || v3, v4 in utils)
 // import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol"; (Openzeppelin VERSION 4)
 
 /// @title Contract for storing permissions and information of users
