@@ -2,7 +2,7 @@
 pragma solidity ^0.8.9;
 
 import {UserInfo} from "./SpaceDAOID.sol";
-import {Counters} from "@openzeppelin/contracts/utils/Counters.sol";    // (Openzepplin v3, v4)
+import {Counters} from "@openzeppelin-v4/contracts/utils/Counters.sol";    // (Openzepplin v3, v4)
 
 /// @title Contract for managing consensus on conjunction data messages in the space domain
 /// @author Antoine Delamare
@@ -73,11 +73,15 @@ contract Consensus {
 
 
     /// @notice Function to make a data request for objects that a single satellite might collide with
+    /// @param _tca_min Start of time window to search for satellite conjunctions within
+    /// @param _tca_max End of time window to search for satellite conjunctions within
+    /// @param _rso_single 2 length string array with first string the rso object and second string "BLANK"
     /// WIP - Need to create the consensus
     function requestDataSingle(uint _tca_min, uint _tca_max, string[2] memory _rso_single) external returns(uint256) {
         // Validate parameters
         require(_tca_max >= _tca_min, "Invalid TCA parameters");
-        require(_rso_single[1] == "BLANK", "More than 1 rso object");
+        // Check second argument in _rso_single is "BLANK"
+        require(keccak256(abi.encodePacked(_rso_single[1])) == keccak256("BLANK"), "More than 1 rso object");
         
         // Increment nonce
         _nonceIds.increment();
@@ -117,6 +121,9 @@ contract Consensus {
 
 
     /// @notice Function to make a data request on cdms between two satellites
+    /// @param _tca_min Start of time window to search for satellite conjunctions within
+    /// @param _tca_max End of time window to search for satellite conjunctions within
+    /// @param _rso_list 2 length string array storing two rso objects to search for conjunctions between
     /// WIP - Need to create the consensus
     function requestDataPair(uint _tca_min, uint _tca_max, string[2] memory _rso_list) external returns(uint256) {
         // Validate parameters

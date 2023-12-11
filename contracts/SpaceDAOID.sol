@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 pragma solidity ^0.8.9;
 
-import {Counters} from "@openzeppelin/contracts/utils/Counters.sol";    // (Openzepplin v3, v4)
-import {BitMaps} from "@openzeppelin/contracts/utils/structs/BitMaps.sol";  // (Openzepplin v5)
-import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";  // (Openzepplin v5 in uitls/structs || v3, v4 in utils)
+import {Counters} from "@openzeppelin-v4/contracts/utils/Counters.sol";    // (Openzepplin v3, v4)
+import {BitMaps} from "@openzeppelin-v5/contracts/utils/structs/BitMaps.sol";  // (Openzepplin v5)
+import {EnumerableSet} from "@openzeppelin-v5/contracts/utils/structs/EnumerableSet.sol";  // (Openzepplin v5 in uitls/structs || v3, v4 in utils)
 // import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol"; (Openzeppelin VERSION 4)
 
 /// @title Contract for storing permissions and information of users
 /// @author Antoine Delamare
 /// @dev WIP --- check if rating logic & newUser whitelist creation convenient | add a merkleProof verification for the whitelist logic
-contract SpaceDAOID {
+contract UserInfo {
 
     using Counters for Counters.Counter; // openzeppelin's secure increment smart contract
     using EnumerableSet for EnumerableSet.AddressSet; // openzeppelin's secure addresses set values initialization smart contract

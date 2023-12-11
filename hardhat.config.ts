@@ -4,7 +4,7 @@ import creds from "./credentials.json";
 import nets from "./networks_list.json";
 
 const config: HardhatUserConfig = {
-  solidity: "0.8.18",
+  solidity: "0.8.20",
   defaultNetwork: "auto",
   networks: {
     auto: {
