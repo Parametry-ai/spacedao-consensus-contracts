@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.19;
 
+import "hardhat/console.sol";
 import {Counters} from "@openzeppelin-v4/contracts/utils/Counters.sol";    // (Openzepplin v3, v4)
 import {BitMaps} from "@openzeppelin-v5/contracts/utils/structs/BitMaps.sol";  // (Openzepplin v5)
 import {EnumerableSet} from "@openzeppelin-v5/contracts/utils/structs/EnumerableSet.sol";  // (Openzepplin v5 in uitls/structs || v3, v4 in utils)
@@ -9,7 +10,7 @@ import {EnumerableSet} from "@openzeppelin-v5/contracts/utils/structs/Enumerable
 /// @title Contract for storing permissions and information of users
 /// @author Antoine Delamare
 /// @dev WIP --- check if rating logic & newUser whitelist creation convenient | add a merkleProof verification for the whitelist logic
-contract UserInfo {
+contract SpaceDAOID {
 
     using Counters for Counters.Counter; // openzeppelin's secure increment smart contract
     using EnumerableSet for EnumerableSet.AddressSet; // openzeppelin's secure addresses set values initialization smart contract
@@ -56,9 +57,9 @@ contract UserInfo {
     }
 
     // Map id value to all user data
-    mapping (uint => UserData) private map_user_data;
+    mapping (uint => UserData) public map_user_data;
     // Map user address to id values
-    mapping (address => uint) private map_id;
+    mapping (address => uint) public map_id;
     
 
     /// @notice Give firsts deployers admin privilages and userId beginning by 1
@@ -66,6 +67,7 @@ contract UserInfo {
     /// @param _admin_names Return array of Names that a pack of users (admins) would have on their profile
     /// @param _admin_addresses Return array of addresses that a pack of users (admins) would use
     constructor (string memory _adminOwner_name, string[] memory _admin_names, address[] memory _admin_addresses) {
+        console.log("DEBUG");
         require(msg.sender != address(0), "Invalid admin address");
         require(_admin_addresses.length > 0 && _admin_names.length > 0, "At least one admin address is required");
         require(_admin_names.length == _admin_addresses.length, "Mismatched array lengths");

@@ -24,8 +24,9 @@ async function deployBaseConsensus() {
     // Main function to call deploy contracts for each required contract
     let name_ = "firstStarterName";
     // Deploys UserInfo Contract
-    const user_info_contract_name = "UserInfo";
-    app_UserInfo = await deployContract(user_info_contract_name, KeySigner, [name_]);
+    const user_info_contract_name = "SpaceDAOID";
+    app_UserInfo = await deployContract(user_info_contract_name, KeySigner, [name_, ["barry", "jane"], [default_keys.public_key_list[3], default_keys.public_key_list[4]]]);
+    // string memory _adminOwner_name, string[] memory _admin_names, address[] memory _admin_addresses
     if (app_UserInfo == null) {
         return { app_Consensus, app_UserInfo, app_Reputation, KeySigner }
     }
@@ -58,11 +59,17 @@ async function deployContract(contract_title: string, KeySigner: any, args?: any
     } else if (args.length == 2) {
         dapp = await Contract.connect(KeySigner).deploy(args[0], args[1], tx_params);
     } else if (args.length == 3) {
+        console.log("here1")
+        console.log(args)
+        console.log()
         dapp = await Contract.connect(KeySigner).deploy(args[0], args[1], args[2], tx_params);
+        console.log("here2")
     } else {
         return null;
     }
+    console.log("IT HAS DEPLOYED")
     const tx = await dapp.deployed();
+    console.log("IT HAS DEPLOYED SUCCESS")
     return dapp
 }
 
