@@ -1,5 +1,4 @@
 {
-    "def": "http://localhost:8545",
     "exochain": "https://exochain.dev.parametry.space/",
-    "localhost": "http://localhost:8545"
+    "localhost": "http://127.0.0.1:8545"
 }

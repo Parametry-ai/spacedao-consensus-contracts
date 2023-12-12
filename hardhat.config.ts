@@ -5,15 +5,14 @@ import nets from "./networks_list.json";
 
 const config: HardhatUserConfig = {
   solidity: "0.8.20",
-  defaultNetwork: "auto",
+  defaultNetwork: "localhost",
   networks: {
-    auto: {
-      url: nets.def,
-      accounts: [creds.private_key]
-    },
     localhost: {
       url: nets.localhost,
-      accounts: [creds.private_key]
+      accounts: [creds.private_key],
+      gas: 50000000,
+      blockGasLimit: 50000000,
+      chanId: 2
     },
     exochain_devnet: {
       url: nets.exochain,
