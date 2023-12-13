@@ -13,24 +13,15 @@ contract SpaceDAOID {
 
     // secure increment counter
     using Counters for Counters.Counter;
+
     // secure set of addresses initializer
     using EnumerableSet for EnumerableSet.AddressSet; 
-
-    // @notice adminOwner = owner of this smart contract
-    address private immutable adminOwner;
-
-    // @notice teamAdmin = array of admins addresses of this smart contract
-    address[] private teamAdmin;
-    // @notice teamNames = array of admins names of this smart contract
-    string[] private teamNames;
-    // @notice teamLength = length of admins names (or addresses) of this smart contract
-    uint private immutable teamLength;
 
     // @notice Counter of userIds
     Counters.Counter private _userIds;
 
-    // @notice initialisation of a set of addresses for admin roles (protect duplicate addresses)
-    EnumerableSet.AddressSet private _adminAddresses;
+    // @notice init of a set of co-signatories, all equal admins with duplicate protection
+    EnumerableSet.AddressSet private adminAddresses;
 
     /// Companies whitelist (Gasless optimized +++)
     /// @notice one user initiated as whitelisted throug his _userId (gasless alternative to mapping)
@@ -62,34 +53,18 @@ contract SpaceDAOID {
     mapping (address => uint) public map_id;
     
     /// @notice Give firsts deployers admin privilages and userId beginning by 1
-    /// @param _adminOwner_name Return Name that the deployer user (adminOwner) would have on his profile
-    /// @param _admin_names Return array of Names that a pack of users (admins) would have on their profile
-    /// @param _admin_addresses Return array of addresses that a pack of users (admins) would use
-    constructor (string memory _adminOwner_name,
-                 string[] memory _admin_names,
-                 address[] memory _admin_addresses)
+    /// @param _adminSenderName Name of the deployer which would be on their profile
+    constructor (string memory _adminSenderName)
     {
         console.log("DEBUG");
         require(msg.sender != address(0), "Invalid admin address");
-        //require(_admin_addresses.length > 0 && _admin_names.length > 0, "At least one admin address is required");
-        //require(_admin_names.length == _admin_addresses.length, "Mismatched array lengths");
         
-        adminOwner = msg.sender; // AdminOwner immutable initiated
-        teamAdmin = _admin_addresses;
-        teamNames = _admin_names;
-        teamLength = _admin_addresses.length;
+        // Adds the first admin to the admin addresses set
+        require(adminAddresses.add(msg.sender), "Duplicate address detected in array set of admin addresses");
 
-        // Initialize admin_owner
-        if (msg.sender == adminOwner) {
-            require(_adminAddresses.add(msg.sender), "Duplicate address detected in array set of admin addresses");
-            _initAdmin(_adminOwner_name, msg.sender);
-        }
-        // Initialize admins_list
-        for (uint i = 0; i < teamLength; i++) {
-            require(_adminAddresses.add(_admin_addresses[i]), "Duplicate address detected in array set of admin addresses");
-            _initAdmin(_admin_names[i], _admin_addresses[i]);
-        }
-        
+        // Create admin user for msg.sender if not present already
+        _createAdminUser(_adminSenderName, msg.sender);
+
     }
 
     /// @notice modifier for adminOwner, owner of this smart contract (Gasless optimized +++)
@@ -192,12 +167,12 @@ contract SpaceDAOID {
     /// @notice Get all admin addresses
     /// @return address[] Returns an array of all admin addresses (Openzeppelin's EnumerableSet)
     function getAdminAddresses() public view returns (address[] memory) {
-        require(_adminAddresses.length() > 0, "No admin addresses yet initialized");
-        return _adminAddresses.values();
+        require(adminAddresses.length() > 0, "No admin addresses yet initialized");
+        return adminAddresses.values();
     }
 
     /// @notice private function to initiate admin roles of users
-    function _initAdmin(string memory _name, address _user_address) private {
+    function _createAdminUser(string memory _name, address _user_address) private {
         uint256 currentUserId = newUser(_name, _user_address);
         require(!BitMaps.get(adminIDs_list, currentUserId), "Admin already exists");
         BitMaps.setTo(adminIDs_list, currentUserId, true);
