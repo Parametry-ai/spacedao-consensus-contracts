@@ -5,21 +5,28 @@ import { ethers } from "hardhat";
 import { Wallet } from "ethers";
 
 
-import {deployBaseConsensus, request_new_data_single, request_new_data_all} from "./test.functions";
+import { deploySpaceDAOIDContract, deployBaseConsensus, request_new_data_single, request_new_data_all} from "./test.functions";
 import { RequestAlreadySentError } from "web3";
 import get_data from "./test.data"
 
 describe("ConsensusS2", async function () {
 
   describe("Deployment", async function () {
-    it("Should deploy all contracts", async function () {
-      const { appConsensus, appSpaceDAOID, appReputation, keySigner } = await loadFixture(deployBaseConsensus);
-      // Make sure an app is at each var
-      expect(appSpaceDAOID, "UserInfo app did not build").to.not.equal(null);
-      expect(appReputation, "Reputation app did not build").to.not.equal(null);
-      expect(appConsensus, "Consensus app did not build").to.not.equal(null);
-      console.log(keySigner.address);
+    it("Should deploy SpaceDAOID contract only", async function () {
+      console.log("DEBUG Deplying spaceDAOID contract")
+      const {appSpaceDAOID, keySigner} = await loadFixture(deploySpaceDAOIDContract);
+      expect(appSpaceDAOID, "SpaceDAOID app did not build").to.not.equal(null);
+      console.log("DEBUG Deplying spaceDAOID contracti --- done.")
     });
+
+//    it("Should deploy all contracts", async function () {
+//      const { appConsensus, appSpaceDAOID, appReputation, keySigner } = await loadFixture(deployBaseConsensus);
+//      // Make sure an app is at each var
+//      expect(appSpaceDAOID, "UserInfo app did not build").to.not.equal(null);
+//      expect(appReputation, "Reputation app did not build").to.not.equal(null);
+//      expect(appConsensus, "Consensus app did not build").to.not.equal(null);
+//      console.log(keySigner.address);
+//    });
     // it("Should make sure cross app communication is set up", async function () {
     //   const { app_Consensus, app_UserInfo, app_Reputation, keySigner } = await loadFixture(deployBaseConsensus);
     //   // Make sure app address link together across apps

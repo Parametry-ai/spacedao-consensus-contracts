@@ -13,6 +13,17 @@ import get_data from "./test.data"
 
 chai.use(solidity);
 
+async function deploySpaceDAOIDContract() {
+    const KeySigner = await key_to_signer(default_keys.private_key_list[0]);
+    appSpaceDAOID = await deployContract("SpaceDAOID",
+                                        KeySigner,
+                                        ["testname", ["Leon Dit"],
+                                         [default_keys.public_key_list[3],
+                                          default_keys.public_key_list[4]]
+                                        ]);
+    return { appSpaceDAOID, KeySigner };
+}
+
 async function deployBaseConsensus() {
     // The id of the address in default_hardhat_keys.json
     let i = 0
