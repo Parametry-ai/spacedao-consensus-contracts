@@ -12,7 +12,7 @@ const config: HardhatUserConfig = {
       accounts: [creds.private_key],
       gas: 50000000,
       blockGasLimit: 50000000,
-      chanId: 2
+      chainId: 31337
     },
     exochain_devnet: {
       url: nets.exochain,
