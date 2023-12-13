@@ -42,9 +42,9 @@ and deploy this project.
 ```shell
 npm install
 npx hardhat help
+npx hardhat node
 npx hardhat test
 REPORT_GAS=true npx hardhat test
-npx hardhat node
 # npx hardhat run scripts/ConsensusS1/deploy.ts
 # npx hardhat run scripts/ConsensusS2/deploy.ts
 ```
