@@ -1,5 +1,6 @@
-credentials.json*
+credentials.json
 batch_authorise.json
+.vscode
 
 node_modules
 package-lock.json

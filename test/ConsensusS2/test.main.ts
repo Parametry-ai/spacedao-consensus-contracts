@@ -13,10 +13,10 @@ describe("ConsensusS2", async function () {
 
   describe("Deployment", async function () {
     it("Should deploy SpaceDAOID contract only", async function () {
-      console.log("DEBUG Deplying spaceDAOID contract")
+      console.log("DEBUG Deplying spaceDAOID contract");
       const {appSpaceDAOID, keySigner} = await loadFixture(deploySpaceDAOIDContract);
       expect(appSpaceDAOID, "SpaceDAOID app did not build").to.not.equal(null);
-      console.log("DEBUG Deplying spaceDAOID contracti --- done.")
+      console.log("DEBUG Deplying spaceDAOID contracti --- done.");
     });
 
 //    it("Should deploy all contracts", async function () {
