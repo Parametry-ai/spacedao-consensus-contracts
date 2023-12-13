@@ -20,14 +20,10 @@ async function deploySpaceDAOIDContract() {
   const KeySigner = await key_to_signer(
     default_keys.private_key_list[0]
   );
-  var appSpaceDAOID = await deployContract('SpaceDAOID', KeySigner, [
-    'testname',
-    ['Leon Dit'],
-    [
-      default_keys.public_key_list[3],
-      default_keys.public_key_list[4],
-    ],
-  ]);
+  var appSpaceDAOID = await deployContract(
+    'SpaceDAOID',
+    KeySigner,
+    ['Leon Ladmin']);
   return { appSpaceDAOID, KeySigner };
 }
 

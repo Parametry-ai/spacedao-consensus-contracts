@@ -6,7 +6,7 @@ import { Wallet } from "ethers";
 
 
 import { deploySpaceDAOIDContract, deployBaseConsensus, request_new_data_single, request_new_data_all} from "./test.functions";
-import { RequestAlreadySentError } from "web3";
+//import { RequestAlreadySentError } from "web3";
 import get_data from "./test.data"
 
 describe("ConsensusS2", async function () {
