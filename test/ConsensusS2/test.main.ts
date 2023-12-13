@@ -9,19 +9,19 @@ import {deployBaseConsensus, request_new_data_single, request_new_data_all} from
 import { RequestAlreadySentError } from "web3";
 import get_data from "./test.data"
 
-describe("ConsensusS2", function () {
+describe("ConsensusS2", async function () {
 
   describe("Deployment", async function () {
     it("Should deploy all contracts", async function () {
-      const { app_Consensus, app_UserInfo, app_Reputation, KeySigner } = await loadFixture(deployBaseConsensus);
+      const { appConsensus, appSpaceDAOID, appReputation, keySigner } = await loadFixture(deployBaseConsensus);
       // Make sure an app is at each var
-      expect(app_UserInfo, "UserInfo app did not build").to.not.equal(null);
-      expect(app_Reputation, "Reputation app did not build").to.not.equal(null);
-      expect(app_Consensus, "Consensus app did not build").to.not.equal(null);
-      // console.log(KeySigner.address);
+      expect(appSpaceDAOID, "UserInfo app did not build").to.not.equal(null);
+      expect(appReputation, "Reputation app did not build").to.not.equal(null);
+      expect(appConsensus, "Consensus app did not build").to.not.equal(null);
+      console.log(keySigner.address);
     });
     // it("Should make sure cross app communication is set up", async function () {
-    //   const { app_Consensus, app_UserInfo, app_Reputation, KeySigner } = await loadFixture(deployBaseConsensus);
+    //   const { app_Consensus, app_UserInfo, app_Reputation, keySigner } = await loadFixture(deployBaseConsensus);
     //   // Make sure app address link together across apps
     //   expect(await app_Consensus.userInfoApp(), "UserInfo app does not line up with that stored on Consensus app").to.equal(app_UserInfo.address)
     //   expect(await app_Consensus.reputationApp(), "Reputation app does not line up with that stored on Consensus app").to.equal(app_Reputation.address)

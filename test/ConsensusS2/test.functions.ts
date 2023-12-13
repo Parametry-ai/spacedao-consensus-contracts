@@ -1,8 +1,8 @@
 import { time, loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { anyValue } from "@nomicfoundation/hardhat-chai-matchers/withArgs";
+//import { anyValue } from "@nomicfoundation/hardhat-chai-matchers/withArgs";
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { Wallet } from "ethers";
+//import { Wallet } from "ethers";
 
 import chai from "chai";
 import { solidity } from "ethereum-waffle";
@@ -25,7 +25,13 @@ async function deployBaseConsensus() {
     let name_ = "firstStarterName";
     // Deploys UserInfo Contract
     const user_info_contract_name = "SpaceDAOID";
-    app_UserInfo = await deployContract(user_info_contract_name, KeySigner, [name_, ["barry", "jane"], [default_keys.public_key_list[3], default_keys.public_key_list[4]]]);
+    app_UserInfo = await deployContract(user_info_contract_name,
+                                        KeySigner,
+                                        [name_,
+                                         ["barry", "jane"],
+                                         [default_keys.public_key_list[3],
+                                          default_keys.public_key_list[4]]
+                                        ]);
     // string memory _adminOwner_name, string[] memory _admin_names, address[] memory _admin_addresses
     if (app_UserInfo == null) {
         return { app_Consensus, app_UserInfo, app_Reputation, KeySigner }
@@ -47,22 +53,19 @@ async function deployContract(contract_title: string, KeySigner: any, args?: any
     // Deploys contract with input title
     // Dev - Only allows between 0 and 3 arguments
     const Contract = await ethers.getContractFactory(contract_title);
-    let tx_params = {
-        gasLimit: 30000000
-    };
     // Deploys with correct number of input arguments
     var dapp;
     if (args == null) {
-        dapp = await Contract.connect(KeySigner).deploy(tx_params);
+        dapp = await Contract.connect(KeySigner).deploy();
     } else if (args.length == 1) {
-        dapp = await Contract.connect(KeySigner).deploy(args[0], tx_params);
+        dapp = await Contract.connect(KeySigner).deploy(args[0]);
     } else if (args.length == 2) {
-        dapp = await Contract.connect(KeySigner).deploy(args[0], args[1], tx_params);
+        dapp = await Contract.connect(KeySigner).deploy(args[0], args[1]);
     } else if (args.length == 3) {
         console.log("here1")
         console.log(args)
-        console.log()
-        dapp = await Contract.connect(KeySigner).deploy(args[0], args[1], args[2], tx_params);
+        console.log(KeySigner)
+        dapp = await Contract.connect(KeySigner).deploy(args[0], args[1], args[2]);
         console.log("here2")
     } else {
         return null;
