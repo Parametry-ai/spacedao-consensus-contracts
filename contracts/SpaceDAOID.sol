@@ -5,26 +5,26 @@ import "hardhat/console.sol";
 import {Counters} from "@openzeppelin-v4/contracts/utils/Counters.sol";    // (Openzepplin v3, v4)
 import {BitMaps} from "@openzeppelin-v5/contracts/utils/structs/BitMaps.sol";  // (Openzepplin v5)
 import {EnumerableSet} from "@openzeppelin-v5/contracts/utils/structs/EnumerableSet.sol";  // (Openzepplin v5 in uitls/structs || v3, v4 in utils)
-// import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol"; (Openzeppelin VERSION 4)
 
 /// @title Contract for storing permissions and information of users
 /// @author Antoine Delamare
 /// @dev WIP --- check if rating logic & newUser whitelist creation convenient | add a merkleProof verification for the whitelist logic
 contract SpaceDAOID {
 
-    using Counters for Counters.Counter; // openzeppelin's secure increment smart contract
-    using EnumerableSet for EnumerableSet.AddressSet; // openzeppelin's secure addresses set values initialization smart contract
-    // using SafeMath for uint256; // openzeppelin's secure arithmetic operations smart contract (VERSION 4)
+    // secure increment counter
+    using Counters for Counters.Counter;
+    // secure set of addresses initializer
+    using EnumerableSet for EnumerableSet.AddressSet; 
 
     // @notice adminOwner = owner of this smart contract
     address private immutable adminOwner;
 
-    // @notice _team_admin = array of admins addresses of this smart contract
-    address[] private _team_admin;
-    // @notice _team_names = array of admins names of this smart contract
-    string[] private _team_names;
-    // @notice _team_length = length of admins names (or addresses) of this smart contract
-    uint private immutable _team_length;
+    // @notice teamAdmin = array of admins addresses of this smart contract
+    address[] private teamAdmin;
+    // @notice teamNames = array of admins names of this smart contract
+    string[] private teamNames;
+    // @notice teamLength = length of admins names (or addresses) of this smart contract
+    uint private immutable teamLength;
 
     // @notice Counter of userIds
     Counters.Counter private _userIds;
@@ -61,21 +61,23 @@ contract SpaceDAOID {
     // Map user address to id values
     mapping (address => uint) public map_id;
     
-
     /// @notice Give firsts deployers admin privilages and userId beginning by 1
     /// @param _adminOwner_name Return Name that the deployer user (adminOwner) would have on his profile
     /// @param _admin_names Return array of Names that a pack of users (admins) would have on their profile
     /// @param _admin_addresses Return array of addresses that a pack of users (admins) would use
-    constructor (string memory _adminOwner_name, string[] memory _admin_names, address[] memory _admin_addresses) {
+    constructor (string memory _adminOwner_name,
+                 string[] memory _admin_names,
+                 address[] memory _admin_addresses)
+    {
         console.log("DEBUG");
         require(msg.sender != address(0), "Invalid admin address");
-        require(_admin_addresses.length > 0 && _admin_names.length > 0, "At least one admin address is required");
-        require(_admin_names.length == _admin_addresses.length, "Mismatched array lengths");
+        //require(_admin_addresses.length > 0 && _admin_names.length > 0, "At least one admin address is required");
+        //require(_admin_names.length == _admin_addresses.length, "Mismatched array lengths");
         
         adminOwner = msg.sender; // AdminOwner immutable initiated
-        _team_admin = _admin_addresses;
-        _team_names = _admin_names;
-        _team_length = _admin_addresses.length;
+        teamAdmin = _admin_addresses;
+        teamNames = _admin_names;
+        teamLength = _admin_addresses.length;
 
         // Initialize admin_owner
         if (msg.sender == adminOwner) {
@@ -83,7 +85,7 @@ contract SpaceDAOID {
             _initAdmin(_adminOwner_name, msg.sender);
         }
         // Initialize admins_list
-        for (uint i = 0; i < _team_length; i++) {
+        for (uint i = 0; i < teamLength; i++) {
             require(_adminAddresses.add(_admin_addresses[i]), "Duplicate address detected in array set of admin addresses");
             _initAdmin(_admin_names[i], _admin_addresses[i]);
         }
