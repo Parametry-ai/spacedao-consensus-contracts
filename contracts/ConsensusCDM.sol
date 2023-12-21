@@ -3,17 +3,17 @@ pragma solidity ^0.8.9;
 
 import "hardhat/console.sol";
 import {SpaceDAOID} from "./SpaceDAOID.sol";
-import {Counters} from "@openzeppelin-v4/contracts/utils/Counters.sol";    // (Openzepplin v3, v4)
+import {Counters} from "@openzeppelin-v4/contracts/utils/Counters.sol";
 
 /// @title Contract for managing consensus on conjunction data messages in the space domain
 /// @author Antoine Delamare
-/// @dev WIP --- Not tested just an example
 
 contract ConsensusCDM {
 
-    using Counters for Counters.Counter; // openzeppelin's secure increment smart contract
+    // openzeppelin's secure increment smart contract
+    using Counters for Counters.Counter; 
 
-    SpaceDAOID public id_app; // UserInfo.sol instance 
+    SpaceDAOID public id_app;
 
     address immutable private consensusOwner;
     Counters.Counter private _nonceIds;
@@ -60,17 +60,11 @@ contract ConsensusCDM {
     event NewCDM(MCDM new_cdm);
     
 
-    // CONSTRUCTOR
+    // ----------------------------------------------------- CONSTRUCTOR
     constructor(address _userInfoAppAddress) {
         consensusOwner = msg.sender;
         id_app = SpaceDAOID(_userInfoAppAddress);
     }
-
-    //  /// @notice modifier for the requestor (Gasless optimized +++)
-    // modifier onlyProvider(address _provider, uint256 _nonce) {
-    //     _checkProvider(_provider, _nonce);
-    //     _;
-    // }
 
 
     /// @notice Function to make a data request for objects that a single satellite might collide with
@@ -82,25 +76,13 @@ contract ConsensusCDM {
         // Validate parameters
         require(_tca_max >= _tca_min, "Invalid TCA parameters");
         // Check second argument in _rso_single is "BLANK"
-        require(keccak256(abi.encodePacked(_rso_list[0])) != keccak256(""), "At least 1 RSO should be specified");
+        require(keccak256(abi.encodePacked(_rso_list[0])) != keccak256(""), "At least 1 RSO, first in the list, should be specified");
         
         // Increment nonce
         _nonceIds.increment();
         uint256 actualNonce = _nonceIds.current();
 
-        // // Get the providers whitelist from UserInfo.sol
-        // address[] memory VALID_PROVIDERS = userInfoApp.getProvidersWhitelist();
-        // // Set the providers whitelist array indexes
-        // uint providersCount = VALID_PROVIDERS.length; // Default to 3 providers
-        // // Create an array with up to 3 "blank" addresses
-        // address[] memory _providers_whitelist = new address[](3);
-
-        // if (providersCount > 3) {
-        //    // If more than 3 providers are found, put the 3 first providers registered
-        //     for (uint i = 0; i < 3; i++) {
-        //         _providers_whitelist[i] = VALID_PROVIDERS[i];
-        //     }
-        // } 
+        // TODO: check if providers in the whitelist have a valid SpaceDAOID.
     
         // Store the request details
         CDMrequests[msg.sender][actualNonce] = CDMRequest({
@@ -114,7 +96,7 @@ contract ConsensusCDM {
             rso_list: _rso_list,
             state: RequestState.Pending
         });
-        console.logUint(actualNonce);
+
         // Emit event
         emit newRequest(msg.sender, actualNonce);
         return actualNonce;
@@ -122,8 +104,7 @@ contract ConsensusCDM {
 
 
     /// @notice Function for the provider to submit data for a request
-    /// WIP - Need to create the consensus
-    function submit(address _requestor_address, uint256 _request_nonce, uint256 _pc, uint256 _tca) external { // onlyProvider(msg.sender, _nonce) {
+    function submit(address _requestor_address, uint256 _request_nonce, uint256 _pc, uint256 _tca) external {
         CDMRequest storage request = CDMrequests[_requestor_address][_request_nonce];
         // Check if the request is valid and in a pending state
         require(request.state == RequestState.Pending, "Invalid request state");
@@ -151,13 +132,9 @@ contract ConsensusCDM {
         // Update the request state to Approved
         request.state = RequestState.Approved;
     
-    // Emit event
-    emit DataSubmission(msg.sender, request.requestor, _request_nonce);
+        // Emit event
+        emit DataSubmission(msg.sender, request.requestor, _request_nonce);
     }
 
-    // /// @notice Check if the msg.sender is an approved provider (Gasless optimized +++)
-    // function _checkProvider(address _provider, uint256 _nonce) internal view virtual {
-    //     require(userInfoApp.map_user_data[userInfoApp.map_id[msg.sender]].role == userInfoApp.Role.Provider, "Not authorized. Provider only");
-    // }
 
 }
