@@ -26,7 +26,7 @@
   "homepage": "https://gitlab.com/spacedao/dapps/space-traffic-consensus#readme",
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^2.0.2",
-    "hardhat": "^2.13.1",
+    "hardhat": "^2.19.3",
     "hardhat-gas-reporter": "^1.0.9"
   },
   "dependencies": {
