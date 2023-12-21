@@ -39,12 +39,23 @@ and deploy this project.
 
 ### Quick recap of commands
 
+To start a test network usin ganache (npm install -g ganache), use the following
+command:
+```shell
+ganache -d --chain.chainId 31337 --wallet.defaultBalance 50000000
+```
+
+Notes to install dependencies, compile and run tests:
 ```shell
 npm install
 npx hardhat help
 npx hardhat node
 npx hardhat test
 REPORT_GAS=true npx hardhat test
+```
+
+Dedicated deployments would look like these, check this scripts out:
+```shell
 # npx hardhat run scripts/ConsensusS1/deploy.ts
 # npx hardhat run scripts/ConsensusS2/deploy.ts
 ```
