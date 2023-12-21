@@ -8,7 +8,7 @@ import {Counters} from "@openzeppelin-v4/contracts/utils/Counters.sol";    // (O
 /// @author Antoine Delamare
 /// @dev WIP --- Not tested just an example
 
-contract Consensus {
+contract ConsensusS2 {
 
     using Counters for Counters.Counter; // openzeppelin's secure increment smart contract
 

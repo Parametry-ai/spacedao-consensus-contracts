@@ -13,41 +13,41 @@ describe("ConsensusS2", async function () {
 
   describe("Deployment", async function () {
     it("Should deploy SpaceDAOID contract only", async function () {
-      console.log("DEBUG Deplying spaceDAOID contract");
+      // console.log("DEBUG Deplying spaceDAOID contract");
       const {appSpaceDAOID, keySigner} = await loadFixture(deploySpaceDAOIDContract);
       expect(appSpaceDAOID, "SpaceDAOID app did not build").to.not.equal(null);
-      console.log("DEBUG Deplying spaceDAOID contracti --- done.");
+      // console.log("DEBUG Deplying spaceDAOID contracti --- done.");
     });
 
-//    it("Should deploy all contracts", async function () {
-//      const { appConsensus, appSpaceDAOID, appReputation, keySigner } = await loadFixture(deployBaseConsensus);
-//      // Make sure an app is at each var
-//      expect(appSpaceDAOID, "UserInfo app did not build").to.not.equal(null);
-//      expect(appReputation, "Reputation app did not build").to.not.equal(null);
-//      expect(appConsensus, "Consensus app did not build").to.not.equal(null);
-//      console.log(keySigner.address);
-//    });
-    // it("Should make sure cross app communication is set up", async function () {
-    //   const { app_Consensus, app_UserInfo, app_Reputation, keySigner } = await loadFixture(deployBaseConsensus);
-    //   // Make sure app address link together across apps
-    //   expect(await app_Consensus.userInfoApp(), "UserInfo app does not line up with that stored on Consensus app").to.equal(app_UserInfo.address)
-    //   expect(await app_Consensus.reputationApp(), "Reputation app does not line up with that stored on Consensus app").to.equal(app_Reputation.address)
-    // });
+   it("Should deploy all contracts", async function () {
+     const { appConsensus, appSpaceDAOID, appReputation, keySigner } = await loadFixture(deployBaseConsensus);
+     // Make sure an app is at each var
+     expect(appSpaceDAOID, "UserInfo app did not build").to.not.equal(null);
+     expect(appReputation, "Reputation app did not build").to.not.equal(null);
+     expect(appConsensus, "Consensus app did not build").to.not.equal(null);
+    //  console.log(keySigner.address);
+   });
+    it("Should make sure cross app communication is set up", async function () {
+      const { app_Consensus, app_UserInfo, app_Reputation, keySigner } = await loadFixture(deployBaseConsensus);
+      // Make sure app address link together across apps
+      expect(await app_Consensus.id_app(), "UserInfo app does not line up with that stored on Consensus app").to.equal(app_UserInfo.address)
+      // expect(await app_Consensus.reputationApp(), "Reputation app does not line up with that stored on Consensus app").to.equal(app_Reputation.address)
+    });
     // WIP --- Tests for UserInfo deployment
     // WIP --- Tests for Reputation deployment
   });
 
-  // describe("New Data Request", async function () {
-  //   it("Should call request new data function once and emit event", async function () {
-  //     await loadFixture(request_new_data_single);      
-  //     // const { app_Consensus, app_UserInfo, app_Reputation } = await loadFixture(request_new_data_all);      
-  //   });
-  //   it("Should call request new data function multiple times and emit event", async function () {
-  //     await loadFixture(request_new_data_all);      
-  //     // const { app_Consensus, app_UserInfo, app_Reputation } = await loadFixture(request_new_data_all);      
-  //   });
-  //   // WIP --- Test bad inputs
-  // });
+  describe("New Data Request", async function () {
+    it("Should call request new data function once and emit event", async function () {
+      await loadFixture(request_new_data_single);      
+      // const { app_Consensus, app_UserInfo, app_Reputation } = await loadFixture(request_new_data_all);      
+    });
+    it("Should call request new data function multiple times and emit event", async function () {
+      await loadFixture(request_new_data_all);      
+      // const { app_Consensus, app_UserInfo, app_Reputation } = await loadFixture(request_new_data_all);      
+    });
+    // WIP --- Test bad inputs
+  });
 
 
   // describe("Submit Data", async function () {
