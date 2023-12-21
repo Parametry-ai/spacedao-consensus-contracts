@@ -10,7 +10,7 @@ import { ethers } from 'hardhat';
 import chai from 'chai';
 import { solidity } from 'ethereum-waffle';
 
-import default_keys from '../default_hardhat_keys.json';
+import default_keys from '../../default_hardhat_keys.json';
 import key_to_signer from './test.key_converter';
 import get_data from './test.data';
 
@@ -61,8 +61,8 @@ async function deployBaseConsensus() {
   if (app_Reputation == null) {
     return { app_Consensus, app_UserInfo, app_Reputation, KeySigner };
   }
-  // Deploys ConsensusS2 Contract
-  const consensus_contract_name = 'ConsensusS2';
+  // Deploys ConsensusCDM Contract
+  const consensus_contract_name = 'ConsensusCDM';
   app_Consensus = await deployContract(
     consensus_contract_name,
     KeySigner,
