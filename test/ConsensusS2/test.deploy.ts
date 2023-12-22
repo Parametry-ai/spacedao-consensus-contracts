@@ -13,21 +13,21 @@ import get_data from "./functionals/test.data"
 describe("Deployment", async function () {
     it("Should deploy SpaceDAOID contract only", async function () {
         // console.log("DEBUG Deplying spaceDAOID contract");
-        const {appSpaceDAOID, keySigner} = await loadFixture(deploySpaceDAOIDContract);
-        expect(appSpaceDAOID, "SpaceDAOID app did not build").to.not.equal(null);
+        const {app_SpaceDAOID, KeySigner} = await loadFixture(deploySpaceDAOIDContract);
+        expect(app_SpaceDAOID, "SpaceDAOID app did not build").to.not.equal(null);
         // console.log("DEBUG Deplying spaceDAOID contracti --- done.");
     });
 
     it("Should deploy all contracts", async function () {
-        const { appConsensus, appSpaceDAOID, appReputation, keySigner } = await loadFixture(deployBaseConsensus);
+        const { app_Consensus, app_SpaceDAOID, app_Reputation, KeySigner } = await loadFixture(deployBaseConsensus);
         // Make sure an app is at each var
-        expect(appSpaceDAOID, "UserInfo app did not build").to.not.equal(null);
-        expect(appReputation, "Reputation app did not build").to.not.equal(null);
-        expect(appConsensus, "Consensus app did not build").to.not.equal(null);
+        expect(app_SpaceDAOID, "UserInfo app did not build").to.not.equal(null);
+        expect(app_Reputation, "Reputation app did not build").to.not.equal(null);
+        expect(app_Consensus, "Consensus app did not build").to.not.equal(null);
     //  console.log(keySigner.address);
     });
     it("Should make sure cross app communication is set up", async function () {
-        const { app_Consensus, app_SpaceDAOID, app_Reputation, keySigner } = await loadFixture(deployBaseConsensus);
+        const { app_Consensus, app_SpaceDAOID, app_Reputation, KeySigner } = await loadFixture(deployBaseConsensus);
         // Make sure app address link together across apps
         expect(await app_Consensus.id_app(), "UserInfo app does not line up with that stored on Consensus app").to.equal(app_SpaceDAOID.address)
         // expect(await app_Consensus.reputationApp(), "Reputation app does not line up with that stored on Consensus app").to.equal(app_Reputation.address)
