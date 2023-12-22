@@ -70,7 +70,7 @@ public and private key that the user is calling from. So deployment and other
 actions can sign transactions.
 
 `credentials.json` is in .gitignore to avoid being it shared.
-Please nevertheless use a test private key.
+Please nevertheless use a test private key during development.
 
 #### Whitelist authorisations
 
