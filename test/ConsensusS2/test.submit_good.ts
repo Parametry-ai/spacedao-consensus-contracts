@@ -10,8 +10,9 @@ import { deploySpaceDAOIDContract, deployBaseConsensus, request_new_data_single,
 import get_data from "./functionals/test.data"
 
 describe("Submit Data GOOD", async function () {
+
   it("Should allow for whitelisted users to submit data and emit event", async function () {
-    const { app_Consensus, app_UserInfo, app_Reputation } = await loadFixture(request_new_data_single);
+    const { app_Consensus, app_SpaceDAOID, app_Reputation } = await loadFixture(request_new_data_single);
     let data = get_data("new_cdm_submit")[0];
     let tx = await app_Consensus.connect(await data.caller)
       .submit(
@@ -28,6 +29,7 @@ describe("Submit Data GOOD", async function () {
     expect(event_args.requestor).to.equal(data.input_data[0]);
     expect(event_args.nonce).to.equal(data.input_data[1]);
   });
+  
   // it("Should allow for anyone to submit data and emit event", async function () {
   //   const { app_Consensus, app_UserInfo, app_Reputation } = await loadFixture(request_new_data_single);
   //   let data = get_data("new_cdm_submit")[0]

@@ -27,9 +27,9 @@ describe("Deployment", async function () {
     //  console.log(keySigner.address);
     });
     it("Should make sure cross app communication is set up", async function () {
-        const { app_Consensus, app_UserInfo, app_Reputation, keySigner } = await loadFixture(deployBaseConsensus);
+        const { app_Consensus, app_SpaceDAOID, app_Reputation, keySigner } = await loadFixture(deployBaseConsensus);
         // Make sure app address link together across apps
-        expect(await app_Consensus.id_app(), "UserInfo app does not line up with that stored on Consensus app").to.equal(app_UserInfo.address)
+        expect(await app_Consensus.id_app(), "UserInfo app does not line up with that stored on Consensus app").to.equal(app_SpaceDAOID.address)
         // expect(await app_Consensus.reputationApp(), "Reputation app does not line up with that stored on Consensus app").to.equal(app_Reputation.address)
     });
     // WIP --- Tests for UserInfo deployment
